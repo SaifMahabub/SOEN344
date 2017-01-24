@@ -18,6 +18,7 @@ Steve Ferreira | 27477546
 
 To install Chronos, you will need an Internet-connected server running a PHP-capable web server and database software. The recommended tested requirements are listed below.
 
+ -  [Laravel's own system requirements](https://laravel.com/docs/5.3/installation#server-requirements), plus:
  -	Apache 2.4 or nginx 1.6
     - Configured to serve files from a `public` directory under the installation directory
  -	PHP 7.0
@@ -169,7 +170,14 @@ Most of the Chronos installation is done via Composer, PHP’s package manager. 
   Application is now live.
   ```
 
-2. [Optional] Seed the database with some default data
+2. Generate an application encryption key (only once):
+
+  ```
+  dev@:/var/www/chronos$ php artisan key:generate
+  Application key [***] set successfully.
+  ```
+
+3. [Optional] Seed the database with some default data
 
   Seeding the database will populate it with some default test users and rooms. The test users will have IDs 10000001 through 10000009, with passwords set to "password". Rooms will be H-901 through H-909.
   

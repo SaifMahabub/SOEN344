@@ -28,6 +28,9 @@ php artisan migrate --force
 # optimize autoloader and compile common classes
 php artisan optimize --force
 
+# first-time run ONLY: generate application key
+#php artisan key:generate
+
 # clear application cache
 php artisan cache:clear
 
