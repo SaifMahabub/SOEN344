@@ -125,9 +125,11 @@ After extracting the Chronos system files, it is necessary to create a database 
   dev:/var/www/chronos$ cp .env.example .env
   ```
 
-3. Edit the `.env` file and change the DB variables to match the appropriate values:
+3. Edit the `.env` file and change the variables to match the appropriate values:
 
   ```
+  APP_URL=http://...
+  [...]
   DB_HOST=localhost
   DB_DATABASE=chronos
   DB_USERNAME=chronos
