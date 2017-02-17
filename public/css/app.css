@@ -6,6 +6,10 @@ body {
     height: 80px;
 }
 
+.calendar-room-column{
+    width: 60px;
+}
+
 .calendar-timeslot-selectable {
     hyphens: auto;
 }
