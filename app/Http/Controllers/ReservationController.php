@@ -4,7 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Data\Mappers\ReservationMapper;
 use App\Data\Mappers\RoomMapper;
+use Barryvdh\Debugbar\Twig\Extension\Debug;
 use Carbon\Carbon;
+use DebugBar\DebugBar;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -192,6 +194,17 @@ class ReservationController extends Controller
         $waitlisted = [];
         $errored = [];
 
+        $response = redirect()
+            ->route('calendar', ['date' => $timeslot->toDateString()]);
+
+        //TODO: extract make error, success, & warning for reservation
+        if (!$this->ensureNotMaxRecur($reservationMapper, $roomName, $timeslot, $recur)) {
+            $errored[] = [$timeslot->copy(), sprintf("You've exceeded your recurring reservation limit of %d.", static::MAX_RECUR)];
+            return $response->with('error', sprintf('The following requests were unsuccessful for %s at %s:<ul class="mb-0">%s</ul>', $room->getName(), $timeslot->format('g a'), implode("\n", array_map(function ($m) {
+                return sprintf("<li><strong>%s</strong>: %s</li>", $m[0]->format('l, F jS, Y'), $m[1]);
+            }, $errored))));
+        }
+
         // loop over every recurring week and independently request the reservation for that week
         for ($t = $timeslot->copy(), $i = 0; $i < $recur; $t->addWeek(), ++$i) {
 
@@ -254,9 +267,6 @@ class ReservationController extends Controller
         // commit one last time, to finalize any deletes we had to do
         $reservationMapper->done();
 
-        $response = redirect()
-            ->route('calendar', ['date' => $timeslot->toDateString()]);
-
         /*
          * Format the status messages
          */
@@ -318,8 +328,9 @@ class ReservationController extends Controller
      * Checks if max_per_week reached.
      * @params reservationMapper instance
      * @params Carbon type date/time
+     * @return bool
      */
-    public function reachedWeeklyLimit(ReservationMapper $reservationMapper, Carbon $timeslot) {
+    public function reachedWeeklyLimit(ReservationMapper $reservationMapper, $timeslot) {
         $reservationCount = $reservationMapper->countInRange(Auth::id(), $timeslot->copy()->startOfWeek(), $timeslot->copy()->startOfWeek()->addWeek());
 
         if ($reservationCount >= static::MAX_PER_USER_PER_WEEK) {
@@ -327,5 +338,36 @@ class ReservationController extends Controller
         } else {
             return false;
         }
+    }
+
+    /**
+     * Makes sure that a new reservation isn't a recurring one over the max limit.
+     * @param ReservationMapper $reservationMapper
+     * @param $roomName
+     * @param Carbon $timeslot
+     * @param int $recurrence
+     * @return bool
+     */
+    public function ensureNotMaxRecur(ReservationMapper $reservationMapper, $roomName, Carbon $timeslot, $recurrence) {
+        $recur = 0; //the previous occurrence
+
+        //check in the past.
+        for ($countdown = static::MAX_RECUR; $countdown > 0; $countdown--) {
+            $timeslot = $timeslot->copy()->subWeek();
+            //get reservations for that week.
+            $reservations = $reservationMapper->findForTimeslot($roomName, $timeslot);
+
+            foreach($reservations as $reservation) {
+                if ($reservation->getUserId() == Auth::id()) {
+                    $recur++;
+                }
+            }
+
+            if ($recur == 0) break;
+        }
+
+        //TODO: check in the future
+
+        return $recur + $recurrence <= static::MAX_RECUR ? true : false;
     }
 }
