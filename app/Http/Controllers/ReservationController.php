@@ -11,7 +11,8 @@ use Illuminate\Support\Facades\Auth;
 class ReservationController extends Controller
 {
     const MAX_PER_TIMESLOT = 4;
-    const MAX_PER_USER = 3;
+    const MAX_PER_USER_PER_WEEK = 3;
+    const MAX_RECUR = 3;
 
     /**
      * Create a new controller instance.
@@ -131,12 +132,9 @@ class ReservationController extends Controller
 
         $reservationMapper = ReservationMapper::getInstance();
 
-        // check if user exceeded maximum amount of reservations
-        $reservationCount = $reservationMapper->countInRange(Auth::id(), $timeslot->copy()->startOfWeek(), $timeslot->copy()->startOfWeek()->addWeek());
-
-        if ($reservationCount >= static::MAX_PER_USER) {
-            return redirect()->route('calendar', ['date' => $timeslot->toDateString()])
-                ->with('error', sprintf("You've exceeded your reservation request limit (%d) for this week.", static::MAX_PER_USER));
+        if ($this->reachedWeeklyLimit($reservationMapper, $timeslot)) {
+                return redirect()->route('calendar', ['date' => $timeslot->toDateString()])
+                    ->with('error', sprintf("You've exceeded your reservation request limit (%d) for this week.", static::MAX_PER_USER_PER_WEEK));
         }
 
         // check if waiting list for timeslot is full
@@ -163,7 +161,7 @@ class ReservationController extends Controller
     {
         $this->validate($request, [
             'description' => 'required',
-            'recur' => 'required|integer|min:1|max:'.static::MAX_PER_USER
+            'recur' => 'required|integer|min:1|max:'.static::MAX_RECUR
         ]);
 
         $timeslot = Carbon::createFromFormat('Y-m-d\TH', $timeslot);
@@ -202,9 +200,8 @@ class ReservationController extends Controller
              */
 
             // check if user exceeded maximum amount of reservations
-            $reservationCount = $reservationMapper->countInRange(Auth::id(), $t->copy()->startOfWeek(), $t->copy()->startOfWeek()->addWeek());
-            if ($reservationCount >= static::MAX_PER_USER) {
-                $errored[] = [$t->copy(), sprintf("You've exceeded your weekly reservation request limit of %d.", static::MAX_PER_USER)];
+            if ($this->reachedWeeklyLimit($reservationMapper, $t)) {
+                $errored[] = [$t->copy(), sprintf("You've exceeded your weekly reservation request limit of %d.", static::MAX_PER_USER_PER_WEEK)];
                 continue;
             }
 
@@ -315,5 +312,20 @@ class ReservationController extends Controller
         }
 
         return $response->with('success', 'Successfully cancelled reservation!');
+    }
+
+    /**
+     * Checks if max_per_week reached.
+     * @params reservationMapper instance
+     * @params Carbon type date/time
+     */
+    public function reachedWeeklyLimit(ReservationMapper $reservationMapper, Carbon $timeslot) {
+        $reservationCount = $reservationMapper->countInRange(Auth::id(), $timeslot->copy()->startOfWeek(), $timeslot->copy()->startOfWeek()->addWeek());
+
+        if ($reservationCount >= static::MAX_PER_USER_PER_WEEK) {
+            return true;
+        } else {
+            return false;
+        }
     }
 }
