@@ -350,23 +350,45 @@ class ReservationController extends Controller
      */
     public function ensureNotMaxRecur(ReservationMapper $reservationMapper, $roomName, Carbon $timeslot, $recurrence) {
         $recur = 0; //the previous occurrence
+        $tempTime = $timeslot ->copy();
 
+        //TODO: duplicate codes in checkPast and future
         //check in the past.
         for ($countdown = static::MAX_RECUR; $countdown > 0; $countdown--) {
-            $timeslot = $timeslot->copy()->subWeek();
+            $increasedRecur = false;
+            $tempTime = $tempTime->copy()->subWeek();
             //get reservations for that week.
-            $reservations = $reservationMapper->findForTimeslot($roomName, $timeslot);
+            $reservations = $reservationMapper->findForTimeslot($roomName, $tempTime);
 
             foreach($reservations as $reservation) {
                 if ($reservation->getUserId() == Auth::id()) {
                     $recur++;
+                    $increasedRecur = true;
                 }
             }
 
-            if ($recur == 0) break;
+            //if a week isn't recurring, then no need to keep going.
+            if (!$increasedRecur) break;
         }
 
-        //TODO: check in the future
+        $tempTime = $timeslot ->copy();
+
+        for ($countdown = static::MAX_RECUR; $countdown > 0; $countdown--) {
+            $increasedRecur = false;
+            $tempTime = $tempTime->copy()->addWeek();
+            //get reservations for that week.
+            $reservations = $reservationMapper->findForTimeslot($roomName, $tempTime);
+
+            foreach($reservations as $reservation) {
+                if ($reservation->getUserId() == Auth::id()) {
+                    $recur++;
+                    $increasedRecur = true;
+                }
+            }
+
+            //if a week isn't recurring, then no need to keep going,
+            if (!$increasedRecur) break;
+        }
 
         return $recur + $recurrence <= static::MAX_RECUR ? true : false;
     }
