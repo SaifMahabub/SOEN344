@@ -181,7 +181,7 @@ Most of the Chronos installation is done via Composer, PHP’s package manager. 
 
 3. [Optional] Seed the database with some default data
 
-  Seeding the database will populate it with some default test users and rooms. The test users will have IDs 10000001 through 10000009, with passwords set to "password". Rooms will be H-901 through H-909.
+  Seeding the database will populate it with some default test users and rooms. The test users will have IDs 10000001 through 10000009, with passwords set to "password". Rooms will be H-901 through H-905.
   
   ```
    dev@:/var/www/chronos$ php artisan db:seed

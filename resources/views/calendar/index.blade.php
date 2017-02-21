@@ -35,8 +35,8 @@
                 <table class="table table-bordered calendar">
                     <thead>
                     <tr>
-                        <th></th>
-                        @for ($h = 7; $h < 23; ++$h)
+                        <th class="calendar-room-column"></th>
+                        @for ($h = 0; $h < 24; ++$h)
                             <th class="text-xs-center">{{ $h >= 13 ? ($h % 13 + 1) : $h % 13 }} {{ $h >= 12 ? 'pm' : 'am' }}</th>
                         @endfor
                     </tr>
@@ -45,7 +45,10 @@
                     @foreach($rooms as $room)
                         <tr class="calendar-room-row">
                             <th class="align-middle text-xs-center">{{ $room->getName() }}</th>
-                            @for ($timeslot = $date->copy()->addHours(7); $timeslot->hour < 23; $timeslot->addHour())
+                            @for ($timeslot = $date->copy()->addHours(0); $timeslot->hour < 23; $timeslot->addHour())
+                                @include('calendar.timeslot')
+                            @endfor
+                            @for ($timeslot = $date->copy()->addHours(23); $timeslot->hour == 23; $timeslot->addHour())
                                 @include('calendar.timeslot')
                             @endfor
                         </tr>
