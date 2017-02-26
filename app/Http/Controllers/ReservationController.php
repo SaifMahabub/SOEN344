@@ -4,14 +4,17 @@ namespace App\Http\Controllers;
 
 use App\Data\Mappers\ReservationMapper;
 use App\Data\Mappers\RoomMapper;
+use Barryvdh\Debugbar\Twig\Extension\Debug;
 use Carbon\Carbon;
+use DebugBar\DebugBar;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class ReservationController extends Controller
 {
     const MAX_PER_TIMESLOT = 4;
-    const MAX_PER_USER = 10;
+    const MAX_PER_USER_PER_WEEK = 3;
+    const MAX_RECUR = 3;
 
     /**
      * Create a new controller instance.
@@ -131,12 +134,9 @@ class ReservationController extends Controller
 
         $reservationMapper = ReservationMapper::getInstance();
 
-        // check if user exceeded maximum amount of reservations
-        $reservationCount = $reservationMapper->countInRange(Auth::id(), $timeslot->copy()->startOfWeek(), $timeslot->copy()->startOfWeek()->addWeek());
-
-        if ($reservationCount >= static::MAX_PER_USER) {
-            return redirect()->route('calendar', ['date' => $timeslot->toDateString()])
-                ->with('error', sprintf("You've exceeded your reservation request limit (%d).", static::MAX_PER_USER));
+        if ($this->reachedWeeklyLimit($reservationMapper, $timeslot)) {
+                return redirect()->route('calendar', ['date' => $timeslot->toDateString()])
+                    ->with('error', sprintf("You've exceeded your reservation request limit (%d) for this week.", static::MAX_PER_USER_PER_WEEK));
         }
 
         // check if waiting list for timeslot is full
@@ -163,7 +163,7 @@ class ReservationController extends Controller
     {
         $this->validate($request, [
             'description' => 'required',
-            'recur' => 'required|integer|min:1|max:'.static::MAX_PER_USER
+            'recur' => 'required|integer|min:1|max:'.static::MAX_RECUR
         ]);
 
         $timeslot = Carbon::createFromFormat('Y-m-d\TH', $timeslot);
@@ -194,6 +194,17 @@ class ReservationController extends Controller
         $waitlisted = [];
         $errored = [];
 
+        $response = redirect()
+            ->route('calendar', ['date' => $timeslot->toDateString()]);
+
+        //TODO: extract make error, success, & warning for reservation
+        if (!$this->ensureNotMaxRecur($reservationMapper, $roomName, $timeslot, $recur)) {
+            $errored[] = [$timeslot->copy(), sprintf("You've exceeded your recurring reservation limit of %d.", static::MAX_RECUR)];
+            return $response->with('error', sprintf('The following requests were unsuccessful for %s at %s:<ul class="mb-0">%s</ul>', $room->getName(), $timeslot->format('g a'), implode("\n", array_map(function ($m) {
+                return sprintf("<li><strong>%s</strong>: %s</li>", $m[0]->format('l, F jS, Y'), $m[1]);
+            }, $errored))));
+        }
+
         // loop over every recurring week and independently request the reservation for that week
         for ($t = $timeslot->copy(), $i = 0; $i < $recur; $t->addWeek(), ++$i) {
 
@@ -202,9 +213,8 @@ class ReservationController extends Controller
              */
 
             // check if user exceeded maximum amount of reservations
-            $reservationCount = $reservationMapper->countInRange(Auth::id(), $t->copy()->startOfWeek(), $t->copy()->startOfWeek()->addWeek());
-            if ($reservationCount >= static::MAX_PER_USER) {
-                $errored[] = [$t->copy(), sprintf("You've exceeded your weekly reservation request limit of %d.", static::MAX_PER_USER)];
+            if ($this->reachedWeeklyLimit($reservationMapper, $t)) {
+                $errored[] = [$t->copy(), sprintf("You've exceeded your weekly reservation request limit of %d.", static::MAX_PER_USER_PER_WEEK)];
                 continue;
             }
 
@@ -256,9 +266,6 @@ class ReservationController extends Controller
 
         // commit one last time, to finalize any deletes we had to do
         $reservationMapper->done();
-
-        $response = redirect()
-            ->route('calendar', ['date' => $timeslot->toDateString()]);
 
         /*
          * Format the status messages
@@ -315,5 +322,74 @@ class ReservationController extends Controller
         }
 
         return $response->with('success', 'Successfully cancelled reservation!');
+    }
+
+    /**
+     * Checks if max_per_week reached.
+     * @params reservationMapper instance
+     * @params Carbon type date/time
+     * @return bool
+     */
+    public function reachedWeeklyLimit(ReservationMapper $reservationMapper, $timeslot) {
+        $reservationCount = $reservationMapper->countInRange(Auth::id(), $timeslot->copy()->startOfWeek(), $timeslot->copy()->startOfWeek()->addWeek());
+
+        if ($reservationCount >= static::MAX_PER_USER_PER_WEEK) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    /**
+     * Makes sure that a new reservation isn't a recurring one over the max limit.
+     * @param ReservationMapper $reservationMapper
+     * @param $roomName
+     * @param Carbon $timeslot
+     * @param int $recurrence
+     * @return bool
+     */
+    public function ensureNotMaxRecur(ReservationMapper $reservationMapper, $roomName, Carbon $timeslot, $recurrence) {
+        $recur = 0; //the previous occurrence
+        $tempTime = $timeslot ->copy();
+
+        //TODO: duplicate codes in checkPast and future
+        //check in the past.
+        for ($countdown = static::MAX_RECUR; $countdown > 0; $countdown--) {
+            $increasedRecur = false;
+            $tempTime = $tempTime->copy()->subWeek();
+            //get reservations for that week.
+            $reservations = $reservationMapper->findForTimeslot($roomName, $tempTime);
+
+            foreach($reservations as $reservation) {
+                if ($reservation->getUserId() == Auth::id()) {
+                    $recur++;
+                    $increasedRecur = true;
+                }
+            }
+
+            //if a week isn't recurring, then no need to keep going.
+            if (!$increasedRecur) break;
+        }
+
+        $tempTime = $timeslot ->copy();
+
+        for ($countdown = static::MAX_RECUR; $countdown > 0; $countdown--) {
+            $increasedRecur = false;
+            $tempTime = $tempTime->copy()->addWeek();
+            //get reservations for that week.
+            $reservations = $reservationMapper->findForTimeslot($roomName, $tempTime);
+
+            foreach($reservations as $reservation) {
+                if ($reservation->getUserId() == Auth::id()) {
+                    $recur++;
+                    $increasedRecur = true;
+                }
+            }
+
+            //if a week isn't recurring, then no need to keep going,
+            if (!$increasedRecur) break;
+        }
+
+        return $recur + $recurrence <= static::MAX_RECUR ? true : false;
     }
 }
