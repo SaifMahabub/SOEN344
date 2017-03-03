@@ -4,9 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Data\Mappers\ReservationMapper;
 use App\Data\Mappers\RoomMapper;
-use Barryvdh\Debugbar\Twig\Extension\Debug;
 use Carbon\Carbon;
-use DebugBar\DebugBar;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -119,7 +117,7 @@ class ReservationController extends Controller
         $timeslot = Carbon::createFromFormat('Y-m-d\TH', $timeslot);
 
         // don't allow reserving in the past
-        if ($timeslot->copy()->addDay()->isPast()) {
+        if ($timeslot->copy()->isPast()) {
             return redirect()->route('calendar', ['date' => $timeslot->toDateString()])
                 ->with('error', 'You cannot reserve time slots in the past.');
         }
@@ -169,7 +167,7 @@ class ReservationController extends Controller
         $timeslot = Carbon::createFromFormat('Y-m-d\TH', $timeslot);
 
         // don't allow reserving in the past
-        if ($timeslot->copy()->addDay()->isPast()) {
+        if ($timeslot->copy()->isPast()) {
             return redirect()->route('calendar', ['date' => $timeslot->toDateString()])
                 ->with('error', 'You cannot reserve time slots in the past.');
         }
