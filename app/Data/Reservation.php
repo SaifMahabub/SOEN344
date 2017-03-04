@@ -35,6 +35,11 @@ class Reservation
     protected $recurId;
 
     /**
+     * @var boolean
+     */
+    protected $waitlisted;
+
+    /**
      * Room constructor.
      * @param int $userId
      * @param string $roomName
@@ -42,17 +47,18 @@ class Reservation
      * @param string $description
      * @param null $recurId
      * @param int $id
+     * @param bool $waitlisted
      */
-    public function __construct(int $userId, string $roomName, \DateTime $timeslot, string $description = null, $recurId = null, $id = null)
+    public function __construct(int $userId, string $roomName, \DateTime $timeslot, string $description = null, $recurId = null, bool $waitlisted = true, $id = null)
     {
         $this->userId = $userId;
         $this->roomName = $roomName;
         $this->description = $description;
         $this->timeslot = $timeslot;
         $this->recurId = $recurId;
-
         // key
         $this->id = $id;
+        $this->waitlisted = $waitlisted;
     }
 
     /**
@@ -149,5 +155,21 @@ class Reservation
     public function setRecurId(string $recurId)
     {
         $this->recurId = $recurId;
+    }
+
+    /**
+     * @return bool
+     */
+    public function getWaitlisted() : string
+    {
+        return $this->waitlisted;
+    }
+
+    /**
+     * @param bool $w
+     */
+    public function setWaitlisted(boolean $w)
+    {
+        $this->waitlisted = $w;
     }
 }

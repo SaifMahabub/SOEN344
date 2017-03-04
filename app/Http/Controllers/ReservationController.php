@@ -115,7 +115,7 @@ class ReservationController extends Controller
     public function showRequestForm(Request $request, $roomName, $timeslot)
     {
         $timeslot = Carbon::createFromFormat('Y-m-d\TH', $timeslot);
-
+        debugbar()->info('warning');
         // don't allow reserving in the past
         if ($timeslot->copy()->isPast()) {
             return redirect()->route('calendar', ['date' => $timeslot->toDateString()])
@@ -223,11 +223,16 @@ class ReservationController extends Controller
                 continue;
             }
 
+            //TODO: if active reservation already exists, set waitlisted attribute to true
+            //TODO: if no active reservation, and if equipment requested, check if equipment is available for that timeslot and set the waitlisted attribute.
+            //temp
+            $isWaitlisted = true;
+
             /*
              * Insert
              */
 
-            $reservations[] = $reservationMapper->create(intval(Auth::id()), $room->getName(), $t->copy(), $request->input('description', ''), $uuid);
+            $reservations[] = $reservationMapper->create(intval(Auth::id()), $room->getName(), $t->copy(), $request->input('description', ''), $uuid, $isWaitlisted);
         }
 
         // run the reservation operations now, as we need to process the results
@@ -297,7 +302,7 @@ class ReservationController extends Controller
      */
     public function cancelReservation(Request $request, $id)
     {
-        // valiadte reservation exists and is owned by user
+        // validate reservation exists and is owned by user
         $reservationMapper = ReservationMapper::getInstance();
         $reservation = $reservationMapper->find($id);
 
@@ -308,6 +313,12 @@ class ReservationController extends Controller
         // delete the reservation
         $reservationMapper->delete($reservation->getId());
         $reservationMapper->done();
+
+        //TODO: if reservation was active, replace the cancelled reservation with next in waitlist or next capstone in waitlist
+        //if reservation not waitlisted then need to replace it with next in waiting list
+        if (!$reservation->getWaitlisted()) {
+
+        }
 
         $response = redirect();
 
