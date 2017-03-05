@@ -155,9 +155,10 @@ class ReservationController extends Controller
      * @param Request $request
      * @param string $roomName
      * @param string $timeslot
+     * @param int $equipmentId
      * @return \Illuminate\Http\Response
      */
-    public function requestReservation(Request $request, $roomName, $timeslot)
+    public function requestReservation(Request $request, $roomName, $timeslot, $equipmentId = null)
     {
         $this->validate($request, [
             'description' => 'required',
@@ -217,22 +218,26 @@ class ReservationController extends Controller
             }
 
             // check if waiting list for timeslot is full
-            $waitingList = $reservationMapper->findForTimeslot($roomName, $t);
-            if (count($waitingList) >= static::MAX_PER_TIMESLOT) {
+            $fullList = $reservationMapper->findForTimeslot($roomName, $t);
+            if (count($fullList) >= static::MAX_PER_TIMESLOT) {
                 $errored[] = [$t->copy(), 'The waiting list is full.'];
                 continue;
             }
 
+            $isWaitlisted = false;
             //TODO: if active reservation already exists, set waitlisted attribute to true
+            //if someone already has it reserved, you'll be added to the waiting list.
+            if (count($fullList) != 0 && !$fullList[0]->getWaitlisted()) {
+                $isWaitlisted = true;
+            } else if ($equipmentId != null){
+                //if equipment already reserved for that time slot and none left, on the waiting list you go.
+                $isWaitlisted = true;
+            }
             //TODO: if no active reservation, and if equipment requested, check if equipment is available for that timeslot and set the waitlisted attribute.
 
-            //temp
-            $isWaitlisted = true;
-            $equipmentId = null;
             /*
              * Insert
              */
-
             $reservations[] = $reservationMapper->create(intval(Auth::id()), $room->getName(), $t->copy(), $request->input('description', ''), $uuid, $isWaitlisted, $equipmentId);
         }
 

@@ -66,7 +66,9 @@ class ReservationTDG extends Singleton
                 'room_name' => $reservation->getRoomName(),
                 'timeslot' => $reservation->getTimeslot(),
                 'description' => $reservation->getDescription(),
-                'recur_id' => $reservation->getRecurId()
+                'equipment_id' => $reservation->getEquipmentId(),
+                'recur_id' => $reservation->getRecurId(),
+                'waitlisted' => (int)$reservation->getWaitlisted()
             ]);
         } catch (QueryException $e) {
             // error inserting, duplicate row
@@ -119,7 +121,7 @@ class ReservationTDG extends Singleton
     }
 
     /**
-     * Returns a list of all Reservations for a given room-timeslot, ordered by id
+     * Returns a list of all Reservations for a given room-timeslot, ordered by id and by waitlisted = false
      *
      * @param string $roomName
      * @param \DateTime $timeslot
@@ -130,7 +132,9 @@ class ReservationTDG extends Singleton
         return DB::select('SELECT *
             FROM reservations
             WHERE timeslot = :timeslot AND room_name = :room_name
-            ORDER BY id', ['timeslot' => $timeslot, 'room_name' => $roomName]);
+            ORDER BY CASE
+            WHEN waitlisted = 0 THEN 1
+            ELSE id END', ['timeslot' => $timeslot, 'room_name' => $roomName]);
     }
 
     /**
@@ -141,6 +145,9 @@ class ReservationTDG extends Singleton
      */
     public function findAllActive(\DateTime $date)
     {
+
+        //TODO: returns the ones with waitlisted = false
+
         return DB::select('SELECT r1.*
             FROM reservations r1
             JOIN (SELECT min(id) AS id
@@ -158,6 +165,9 @@ class ReservationTDG extends Singleton
      */
     public function findPositionsForUser(int $user_id)
     {
+        //TODO: waitlist should be sorted by waitlisted == true
+        //TODO: and prioritizing capstone users in the future.
+
         return DB::select('SELECT t.* FROM (
                 SELECT r.*,
                     @rank_count := CASE WHEN @prev_room_name <> room_name OR @prev_timeslot <> timeslot THEN 0 ELSE @rank_count + 1 END AS position,

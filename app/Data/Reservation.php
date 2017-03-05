@@ -40,7 +40,7 @@ class Reservation
     protected $waitlisted;
 
     /**
-     * @var int
+     * @var int|null
      */
     protected $equipmentId;
 
@@ -52,10 +52,10 @@ class Reservation
      * @param string $description
      * @param null $recurId
      * @param bool $waitlisted
-     * @param int $id
      * @param int $equipmentId
+     * @param int $id
      */
-    public function __construct(int $userId, string $roomName, \DateTime $timeslot, string $description = null, $recurId = null, bool $waitlisted = true, $id = null, $equipmentId = null)
+    public function __construct(int $userId, string $roomName, \DateTime $timeslot, string $description = null, $recurId = null, bool $waitlisted = true, $equipmentId = null, $id = null)
     {
         $this->userId = $userId;
         $this->roomName = $roomName;
