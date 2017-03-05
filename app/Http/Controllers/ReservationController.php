@@ -7,6 +7,7 @@ use App\Data\Mappers\RoomMapper;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use App\Data\Mappers\EquipmentMapper;
 
 class ReservationController extends Controller
 {
@@ -229,9 +230,8 @@ class ReservationController extends Controller
             if (count($fullList) != 0 && !$fullList[0]->getWaitlisted()) {
                 $isWaitlisted = true;
             } else if ($equipmentId != null){
-                //TODO: if no active reservation, and if equipment requested, check if equipment is available for that timeslot and set the waitlisted attribute.
-                //if equipment already reserved for that time slot and none left, on the waiting list you go.
-                $isWaitlisted = true;
+                //if equipment not available for that time slot, on the waiting list you go.
+                if (!$this->checkEquipmentAvailable($equipmentId, $t)) $isWaitlisted = true;
             }
 
             /*
@@ -318,13 +318,21 @@ class ReservationController extends Controller
         //if reservation was active then need to replace it with next in waiting list
         if (!$reservation->getWaitlisted()) {
             $reservations = $reservationMapper->findForTimeslot($reservation->getRoomName(), $reservation->getTimeslot());
-            if (count($reservations) > 1) {
-                //make the next person on the list not waitlisted anymore only if the equipment they need is also available.
-                foreach ($reservations as $res) {
-                    //TODO: make them active only if the equipment they need is available!
+            $resSize = count($reservations);
+            //make them active only if the equipment they need is available!
+            //make the next person on the list not waitlisted anymore only if the equipment they need is also available.
+            $equipId = null;
+            //start at 1 because first value is the current active one to be cancelled.
+            for ($i=1; $i < $resSize; $i++) {
+                $equipId = $reservations[$i]->getEquipmentId();
+                //if equipId not available, move to the next
+                if ($equipId != null && !$this->checkEquipmentAvailable($equipId, $reservations[$i]->getTimeslot())) {
                     continue;
+                } else {
+                    //else make them the active reservation
+                    $reservationMapper->setWaitlisted($reservations[$i]->getId(), false);
+                    break;
                 }
-                $reservationMapper->setWaitlisted($reservations[1]->getId(), false);
             }
         }
 
@@ -343,6 +351,25 @@ class ReservationController extends Controller
         }
 
         return $response->with('success', 'Successfully cancelled reservation!');
+    }
+
+    /**
+     * Checks whether or not a piece of equipment is available for a given timeslot.
+     *
+     * @param int $id the equipment id
+     * @param $timeslot
+     * @return bool
+     */
+    public function checkEquipmentAvailable(int $id, $timeslot)
+    {
+        $amount = EquipmentMapper::getInstance()->find($id)->getAmount();
+
+        $reservationMapper = ReservationMapper::getInstance();
+        $totalUsing = $reservationMapper->findForTimeWithEquipment($id, $timeslot);
+
+        //if none available return false
+        if ($totalUsing >= $amount) return false;
+        else return true;
     }
 
     /**

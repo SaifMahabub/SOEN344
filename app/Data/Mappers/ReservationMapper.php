@@ -52,7 +52,7 @@ class ReservationMapper extends Singleton
     public function create(int $userId, string $roomName, \DateTime $timeslot, string $description, string $uuid, bool $waitlisted, $equipmentId): Reservation
     {
         $reservation = new Reservation($userId, $roomName, $timeslot, $description, $uuid, $waitlisted, $equipmentId);
-//        dd($reservation);
+
         // add the new Reservation to the list of existing objects in live memory
         $this->identityMap->add($reservation);
 
@@ -112,6 +112,18 @@ class ReservationMapper extends Singleton
     }
 
     /**
+     * @param int $equipmentId
+     * @param \DateTime $timeslot
+     * @return int Number of active reservations for that timeslot who are using the equipment
+     */
+    public function findForTimeWithEquipment(int $equipmentId, \DateTime $timeslot): int
+    {
+        $results = $this->tdg->findForTimeWithEquipment($equipmentId, $timeslot);
+
+        return count($results);
+    }
+
+    /**
      * @param Reservation $reservation
      * @return int
      */
@@ -122,6 +134,8 @@ class ReservationMapper extends Singleton
 
         // find which position we're in the waitlist
         $position = 0;
+        //if no one active, straight to waitlist.
+        if ($reservations[0]->getWaitlisted()) ++$position;
         foreach ($reservations as $r) {
             if ($r->getId() === $reservation->getId()) {
                 break;

@@ -47,7 +47,7 @@ class EquipmentMapper extends Singleton
 
         // If Identity Map doesn't have it then use TDG.
         if ($equipment === null) {
-            $result = $this->tdg->find($equipment);
+            $result = $this->tdg->find($id);
         }
 
         // If TDG doesn't have it then it doens't exist.

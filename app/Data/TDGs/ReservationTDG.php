@@ -122,12 +122,12 @@ class ReservationTDG extends Singleton
     }
 
     /**
-     * Returns a list of all Reservations for a given room-timeslot, ordered by id and by waitlisted = false
-     *
-     * @param string $roomName
-     * @param \DateTime $timeslot
-     * @return array
-     */
+ * Returns a list of all Reservations for a given room-timeslot, ordered by id and by waitlisted = false
+ *
+ * @param string $roomName
+ * @param \DateTime $timeslot
+ * @return array
+ */
     public function findForTimeslot(string $roomName, \DateTime $timeslot)
     {
         return DB::select('SELECT *
@@ -139,20 +139,34 @@ class ReservationTDG extends Singleton
     }
 
     /**
-     * Returns a list of all active (eg. not waitlisted) reservations for a user
+     * Returns a list of all ACTIVE Reservations for a given equipment-timeslot
+     *
+     * @param int $equipmentId
+     * @param \DateTime $timeslot
+     * @return array
+     */
+    public function findForTimeWithEquipment(int $equipId, \DateTime $timeslot)
+    {
+        return DB::select('SELECT *
+            FROM reservations
+            WHERE timeslot = :timeslot AND equipment_id = :equipment_id AND waitlisted = 0',
+            ['timeslot' => $timeslot, 'equipment_id' => $equipId]
+        );
+    }
+
+    /**
+     * Returns a list of all active (eg. not waitlisted) reservations for a date
      *
      * @param \DateTime $date
      * @return array
      */
     public function findAllActive(\DateTime $date)
     {
-
-        //TODO: returns the ones with waitlisted = false
-
         return DB::select('SELECT r1.*
             FROM reservations r1
             JOIN (SELECT min(id) AS id
 	            FROM reservations
+	            WHERE waitlisted = FALSE 
 	            GROUP BY room_name, timeslot) r2 ON r1.id = r2.id
 	        WHERE DATE(timeslot) = DATE(?)
             ORDER BY timeslot;', [$date]);
