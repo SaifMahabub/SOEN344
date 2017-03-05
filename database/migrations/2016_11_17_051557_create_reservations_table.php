@@ -19,6 +19,10 @@ class CreateReservationsTable extends Migration
             $table->string('room_name');
             $table->dateTime('timeslot');
             $table->text('description');
+            $table->integer('equipment')->unsigned()->nullable();
+            $table->foreign('equipment')
+                ->references('id')->on('equipment')
+                ->onDelete('cascade');
             $table->foreign('user_id')->references('id')->on('users');
             $table->foreign('room_name')->references('name')->on('rooms');
             $table->unique(['user_id', 'room_name', 'timeslot']);
