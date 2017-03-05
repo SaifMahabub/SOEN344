@@ -225,14 +225,15 @@ class ReservationController extends Controller
 
             //TODO: if active reservation already exists, set waitlisted attribute to true
             //TODO: if no active reservation, and if equipment requested, check if equipment is available for that timeslot and set the waitlisted attribute.
+
             //temp
             $isWaitlisted = true;
-
+            $equipmentId = null;
             /*
              * Insert
              */
 
-            $reservations[] = $reservationMapper->create(intval(Auth::id()), $room->getName(), $t->copy(), $request->input('description', ''), $uuid, $isWaitlisted);
+            $reservations[] = $reservationMapper->create(intval(Auth::id()), $room->getName(), $t->copy(), $request->input('description', ''), $uuid, $isWaitlisted, $equipmentId);
         }
 
         // run the reservation operations now, as we need to process the results
