@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Data\Mappers\ReservationMapper;
 use App\Data\Mappers\RoomMapper;
+use App\Data\ReservationSession;
+use App\Data\TDGs\ReservationSessionTDG;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -13,7 +15,6 @@ class ReservationController extends Controller
     const MAX_PER_TIMESLOT = 4;
     const MAX_PER_USER_PER_WEEK = 3;
     const MAX_RECUR = 3;
-
     /**
      * Create a new controller instance.
      */
@@ -129,6 +130,10 @@ class ReservationController extends Controller
         if ($room === null) {
             return abort(404);
         }
+
+        $session = new ReservationSession(Auth::id(), $roomName, $timeslot);
+        $sessionTDG = ReservationSessionTDG::getInstance();
+        $sessionTDG->makeNewSession($session);
 
         $reservationMapper = ReservationMapper::getInstance();
 
