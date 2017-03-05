@@ -167,7 +167,7 @@ class Reservation
     /**
      * @return bool
      */
-    public function getWaitlisted() : string
+    public function getWaitlisted()
     {
         return $this->waitlisted;
     }
@@ -175,7 +175,7 @@ class Reservation
     /**
      * @param bool $w
      */
-    public function setWaitlisted(boolean $w)
+    public function setWaitlisted($w)
     {
         $this->waitlisted = $w;
     }

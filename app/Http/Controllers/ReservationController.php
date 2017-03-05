@@ -225,15 +225,14 @@ class ReservationController extends Controller
             }
 
             $isWaitlisted = false;
-            //TODO: if active reservation already exists, set waitlisted attribute to true
             //if someone already has it reserved, you'll be added to the waiting list.
             if (count($fullList) != 0 && !$fullList[0]->getWaitlisted()) {
                 $isWaitlisted = true;
             } else if ($equipmentId != null){
+                //TODO: if no active reservation, and if equipment requested, check if equipment is available for that timeslot and set the waitlisted attribute.
                 //if equipment already reserved for that time slot and none left, on the waiting list you go.
                 $isWaitlisted = true;
             }
-            //TODO: if no active reservation, and if equipment requested, check if equipment is available for that timeslot and set the waitlisted attribute.
 
             /*
              * Insert
@@ -316,15 +315,22 @@ class ReservationController extends Controller
             return abort(404);
         }
 
+        //if reservation was active then need to replace it with next in waiting list
+        if (!$reservation->getWaitlisted()) {
+            $reservations = $reservationMapper->findForTimeslot($reservation->getRoomName(), $reservation->getTimeslot());
+            if (count($reservations) > 1) {
+                //make the next person on the list not waitlisted anymore only if the equipment they need is also available.
+                foreach ($reservations as $res) {
+                    //TODO: make them active only if the equipment they need is available!
+                    continue;
+                }
+                $reservationMapper->setWaitlisted($reservations[1]->getId(), false);
+            }
+        }
+
         // delete the reservation
         $reservationMapper->delete($reservation->getId());
         $reservationMapper->done();
-
-        //TODO: if reservation was active, replace the cancelled reservation with next in waitlist or next capstone in waitlist
-        //if reservation not waitlisted then need to replace it with next in waiting list
-        if (!$reservation->getWaitlisted()) {
-
-        }
 
         $response = redirect();
 
