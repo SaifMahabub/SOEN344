@@ -292,6 +292,10 @@ class ReservationController extends Controller
             }, $errored))));
         }
 
+        $session = new ReservationSession(Auth::id(), $roomName, $timeslot);
+        $sessionTDG = ReservationSessionTDG::getInstance();
+        $sessionTDG->endSession($session);
+
         return $response;
     }
 

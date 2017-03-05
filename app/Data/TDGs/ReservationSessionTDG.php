@@ -5,7 +5,6 @@ use App\Singleton;
 use DB;
 use App\Data\ReservationSession;
 
-
 class ReservationSessionTDG extends Singleton
 {
 
@@ -18,7 +17,7 @@ class ReservationSessionTDG extends Singleton
     }
 
     public function endSession(ReservationSession $session){
-        DB::delete('DELETE FROM session WHERE userId = :userId, roomName = :userId, timeslot = :timeslot)', [
+        DB::delete('DELETE FROM session WHERE userId = :userId AND roomName = :roomName AND timeslot = :timeslot', [
             'userId' => $session->getUserId(),
             'roomName' => $session->getRoomName(),
             'timeslot' => $session->getTimeslot()
