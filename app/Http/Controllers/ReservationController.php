@@ -131,7 +131,9 @@ class ReservationController extends Controller
             return abort(404);
         }
 
+        $equipmentMapper = EquipmentMapper::getInstance();
         $reservationMapper = ReservationMapper::getInstance();
+        $equipment = $equipmentMapper->findAll();
 
         if ($this->reachedWeeklyLimit($reservationMapper, $timeslot)) {
                 return redirect()->route('calendar', ['date' => $timeslot->toDateString()])
@@ -148,7 +150,8 @@ class ReservationController extends Controller
 
         return view('reservation.request', [
             'room' => $room,
-            'timeslot' => $timeslot
+            'timeslot' => $timeslot,
+            'equipment' => $equipment
         ]);
     }
 
@@ -156,15 +159,16 @@ class ReservationController extends Controller
      * @param Request $request
      * @param string $roomName
      * @param string $timeslot
-     * @param int $equipmentId
      * @return \Illuminate\Http\Response
      */
-    public function requestReservation(Request $request, $roomName, $timeslot, $equipmentId = null)
+    public function requestReservation(Request $request, $roomName, $timeslot)
     {
         $this->validate($request, [
             'description' => 'required',
             'recur' => 'required|integer|min:1|max:'.static::MAX_RECUR
         ]);
+
+        $equipmentId = $request->input('equipment', null);
 
         $timeslot = Carbon::createFromFormat('Y-m-d\TH', $timeslot);
 
