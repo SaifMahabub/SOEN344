@@ -18,6 +18,7 @@ class CreateSessionTable extends Migration
             $table->primary('userId');
             $table->string('roomName');
             $table->dateTime('timeslot');
+            $table->dateTime('timestamp');
         });
     }
 

@@ -133,6 +133,22 @@ class ReservationController extends Controller
 
         $session = new ReservationSession(Auth::id(), $roomName, $timeslot);
         $sessionTDG = ReservationSessionTDG::getInstance();
+
+        // Concurrency handling: lock the resource if another student is reserving.
+        if($sessionTDG->checkLock($session)){
+            return redirect()->route('calendar', ['date' => $timeslot->toDateString()])
+                ->with('error', sprintf("Another student has a session underway. Please wait patiently
+                or request for another room."));
+        }
+
+        // Concurrency handling: lock the other resources if the user is trying to access multiple
+        // resources at the same time.
+        if($sessionTDG->checkSessionInProgress($session)){
+            return redirect()->route('calendar', ['date' => $timeslot->toDateString()])
+                ->with('error', sprintf("You already have a session underway. Please complete
+                it before you process to a new reservation."));
+        }
+
         $sessionTDG->makeNewSession($session);
 
         $reservationMapper = ReservationMapper::getInstance();
