@@ -18,6 +18,7 @@ class CreateUsersTable extends Migration
             $table->string('name');
             $table->string('password');
             $table->rememberToken();
+            $table->boolean('isCapstone')->default(0);
             $table->primary('id');
         });
     }

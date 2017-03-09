@@ -116,7 +116,7 @@ class ReservationController extends Controller
     public function showRequestForm(Request $request, $roomName, $timeslot)
     {
         $timeslot = Carbon::createFromFormat('Y-m-d\TH', $timeslot);
-        debugbar()->info('warning');
+
         // don't allow reserving in the past
         if ($timeslot->copy()->isPast()) {
             return redirect()->route('calendar', ['date' => $timeslot->toDateString()])

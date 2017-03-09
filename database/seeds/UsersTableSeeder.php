@@ -16,6 +16,7 @@ class UsersTableSeeder extends Seeder
                 'id' => $userId + $i,
                 'name' => 'Test User ' . $i,
                 'password' => bcrypt('password'),
+                'isCapstone' => 0
             ]);
         }
     }
