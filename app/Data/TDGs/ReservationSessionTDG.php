@@ -23,6 +23,11 @@ class ReservationSessionTDG extends Singleton
 
     // Remove the Reservation session to allow other users from accessing this resource/room
     public function endSession(ReservationSession $session){
+        if($session->getRoomName()==null AND $session->getTimeslot()==null){
+            DB::delete('DELETE FROM session WHERE userId = :userId', [
+                'userId' => $session->getUserId()
+            ]);
+        }
         DB::delete('DELETE FROM session WHERE userId = :userId AND roomName = :roomName AND timeslot = :timeslot', [
             'userId' => $session->getUserId(),
             'roomName' => $session->getRoomName(),

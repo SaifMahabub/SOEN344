@@ -7,6 +7,10 @@
             <small class="text-muted">for {{ $timeslot->format('l, F jS, Y') }} at {{ $timeslot->format('g a') }} in {{ $room->getName() }}</small>
         </h1>
 
+        <p id="timer"></p>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+        <script type="text/javascript" src="{{ URL::asset('js/sessionTimer.js') }}"></script>
+
         <form method="post" action="{{ route('requestPost', ['room' => $room->getName(), 'date' => $timeslot->format('Y-m-d\TH')]) }}">
             {{ csrf_field() }}
             <div class="form-group row{{ $errors->has('description') ? ' has-danger' : '' }}">
