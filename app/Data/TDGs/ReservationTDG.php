@@ -66,7 +66,9 @@ class ReservationTDG extends Singleton
                 'room_name' => $reservation->getRoomName(),
                 'timeslot' => $reservation->getTimeslot(),
                 'description' => $reservation->getDescription(),
-                'recur_id' => $reservation->getRecurId()
+                'equipment_id' => $reservation->getEquipmentId(),
+                'recur_id' => $reservation->getRecurId(),
+                'waitlisted' => (int)$reservation->getWaitlisted()
             ]);
         } catch (QueryException $e) {
             // error inserting, duplicate row
@@ -82,9 +84,10 @@ class ReservationTDG extends Singleton
      */
     public function update(Reservation $reservation)
     {
-        DB::update('UPDATE reservations SET description = :description WHERE id = :id', [
+        DB::update('UPDATE reservations SET description = :description, waitlisted = :waitlisted WHERE id = :id', [
             'id' => $reservation->getId(),
-            'description' => $reservation->getDescription()
+            'description' => $reservation->getDescription(),
+            'waitlisted' => (int)$reservation->getWaitlisted()
         ]);
     }
 
@@ -119,22 +122,40 @@ class ReservationTDG extends Singleton
     }
 
     /**
-     * Returns a list of all Reservations for a given room-timeslot, ordered by id
-     *
-     * @param string $roomName
-     * @param \DateTime $timeslot
-     * @return array
-     */
+ * Returns a list of all Reservations for a given room-timeslot, ordered by id and by waitlisted = false
+ *
+ * @param string $roomName
+ * @param \DateTime $timeslot
+ * @return array
+ */
     public function findForTimeslot(string $roomName, \DateTime $timeslot)
     {
         return DB::select('SELECT *
             FROM reservations
             WHERE timeslot = :timeslot AND room_name = :room_name
-            ORDER BY id', ['timeslot' => $timeslot, 'room_name' => $roomName]);
+            ORDER BY CASE
+            WHEN waitlisted = 0 THEN 1
+            ELSE id END', ['timeslot' => $timeslot, 'room_name' => $roomName]);
     }
 
     /**
-     * Returns a list of all active (eg. not waitlisted) reservations for a user
+     * Returns a list of all ACTIVE Reservations for a given equipment-timeslot
+     *
+     * @param int $equipmentId
+     * @param \DateTime $timeslot
+     * @return array
+     */
+    public function findForTimeWithEquipment(int $equipId, \DateTime $timeslot)
+    {
+        return DB::select('SELECT *
+            FROM reservations
+            WHERE timeslot = :timeslot AND equipment_id = :equipment_id AND waitlisted = 0',
+            ['timeslot' => $timeslot, 'equipment_id' => $equipId]
+        );
+    }
+
+    /**
+     * Returns a list of all active (eg. not waitlisted) reservations for a date
      *
      * @param \DateTime $date
      * @return array
@@ -145,6 +166,7 @@ class ReservationTDG extends Singleton
             FROM reservations r1
             JOIN (SELECT min(id) AS id
 	            FROM reservations
+	            WHERE waitlisted = FALSE 
 	            GROUP BY room_name, timeslot) r2 ON r1.id = r2.id
 	        WHERE DATE(timeslot) = DATE(?)
             ORDER BY timeslot;', [$date]);
@@ -158,15 +180,21 @@ class ReservationTDG extends Singleton
      */
     public function findPositionsForUser(int $user_id)
     {
+        //TODO: waitlist should be sorted by waitlisted == true
+        //TODO: and prioritizing capstone users in the future.
+
         return DB::select('SELECT t.* FROM (
                 SELECT r.*,
-                    @rank_count := CASE WHEN @prev_room_name <> room_name OR @prev_timeslot <> timeslot THEN 0 ELSE @rank_count + 1 END AS position,
+                    @rank_count := CASE 
+                      WHEN waitlisted = 1 AND (@prev_room_name <> room_name OR @prev_timeslot <> timeslot) THEN 1
+                      WHEN @prev_room_name <> room_name OR @prev_timeslot <> timeslot THEN 0
+                      ELSE @rank_count + 1 END AS position,
                     @prev_timeslot := timeslot AS _prev_timeslot,
                     @prev_room_name := room_name AS _prev_room_name
                 FROM 
                     (SELECT @prev_room_name := -1, @prev_timeslot := -1, @rank_count := -1) v,
                     reservations r
-                ORDER BY room_name, timeslot, id) t
+                ORDER BY room_name, timeslot, waitlisted, id) t
             WHERE user_id = ? AND timeslot >= CURDATE()
             ORDER BY timeslot;', [$user_id]);
     }

@@ -20,6 +20,22 @@
                     @endif
                 </div>
             </div>
+            <div class="form-group row{{ $errors->has('equipment') ? ' has-danger' : '' }}">
+                <label for="inputEquipment" class="col-xs-3 col-sm-2 col-form-label">Equipment</label>
+                <div class="col-xs-9 col-md-3">
+                <select class="form-control" name="equipment" id="inputEquipment">
+                    <option value="-1">None</option>
+                    @foreach($equipment as $e)
+                        <option value="{{$e->getId()}}">{{$e->getName()}}</option>
+                    @endforeach
+                </select>
+                    @if ($errors->has('equipment'))
+                        <div class="form-control-feedback">
+                            {{ $errors->first('equipment') }}
+                        </div>
+                    @endif
+                </div>
+            </div>
             <div class="form-group row{{ $errors->has('recur') ? ' has-danger' : '' }}">
                 <label for="inputRecur" class="col-xs-3 col-sm-2 col-form-label">Recur for</label>
                 <div class="col-xs-9 col-md-3">

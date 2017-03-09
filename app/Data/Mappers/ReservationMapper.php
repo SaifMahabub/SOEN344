@@ -2,6 +2,7 @@
 
 namespace App\Data\Mappers;
 
+use App\Data\Equipment;
 use App\Data\IdentityMaps\ReservationIdentityMap;
 use App\Data\TDGs\ReservationTDG;
 use App\Data\UoWs\ReservationUoW;
@@ -44,11 +45,13 @@ class ReservationMapper extends Singleton
      * @param \DateTime $timeslot
      * @param string $description
      * @param string $uuid
+     * @param bool $waitlisted
+     * @param int $equipmentId
      * @return Reservation
      */
-    public function create(int $userId, string $roomName, \DateTime $timeslot, string $description, string $uuid): Reservation
+    public function create(int $userId, string $roomName, \DateTime $timeslot, string $description, string $uuid, bool $waitlisted, $equipmentId): Reservation
     {
-        $reservation = new Reservation($userId, $roomName, $timeslot, $description, $uuid);
+        $reservation = new Reservation($userId, $roomName, $timeslot, $description, $uuid, $waitlisted, $equipmentId);
 
         // add the new Reservation to the list of existing objects in live memory
         $this->identityMap->add($reservation);
@@ -78,7 +81,7 @@ class ReservationMapper extends Singleton
         // if TDG doesn't have it, it doesn't exist
         if ($result !== null) {
             // we got the Reservation from the TDG who got it from the DB and now the mapper must add it to the ReservationIdentityMap
-            $reservation = new Reservation(intval($result->user_id), $result->room_name, new Carbon($result->timeslot), $result->description, $result->recur_id, intval($result->id));
+            $reservation = new Reservation(intval($result->user_id), $result->room_name, new Carbon($result->timeslot), $result->description, $result->recur_id, $result->waitlisted, $result->equipment_id, intval($result->id));
             $this->identityMap->add($reservation);
         }
 
@@ -99,13 +102,25 @@ class ReservationMapper extends Singleton
             if ($reservation = $this->identityMap->get($result->id)) {
                 $reservations[] = $reservation;
             } else {
-                $reservation = new Reservation(intval($result->user_id), $result->room_name, new Carbon($result->timeslot), $result->description, $result->recur_id, intval($result->id));
+                $reservation = new Reservation(intval($result->user_id), $result->room_name, new Carbon($result->timeslot), $result->description, $result->recur_id, $result->waitlisted, $result->equipment_id, intval($result->id));
                 $this->identityMap->add($reservation);
                 $reservations[] = $reservation;
             }
         }
 
         return $reservations;
+    }
+
+    /**
+     * @param int $equipmentId
+     * @param \DateTime $timeslot
+     * @return int Number of active reservations for that timeslot who are using the equipment
+     */
+    public function findForTimeWithEquipment(int $equipmentId, \DateTime $timeslot): int
+    {
+        $results = $this->tdg->findForTimeWithEquipment($equipmentId, $timeslot);
+
+        return count($results);
     }
 
     /**
@@ -119,6 +134,8 @@ class ReservationMapper extends Singleton
 
         // find which position we're in the waitlist
         $position = 0;
+        //if no one active, straight to waitlist.
+        if ($reservations[0]->getWaitlisted()) ++$position;
         foreach ($reservations as $r) {
             if ($r->getId() === $reservation->getId()) {
                 break;
@@ -143,7 +160,7 @@ class ReservationMapper extends Singleton
             if ($reservation = $this->identityMap->get($result->id)) {
                 $reservations[] = $reservation;
             } else {
-                $reservation = new Reservation(intval($result->user_id), $result->room_name, new Carbon($result->timeslot), $result->description, $result->recur_id, intval($result->id));
+                $reservation = new Reservation(intval($result->user_id), $result->room_name, new Carbon($result->timeslot), $result->description, $result->recur_id, $result->waitlisted, $result->equipment_id, intval($result->id));
                 $this->identityMap->add($reservation);
                 $reservations[] = $reservation;
             }
@@ -165,7 +182,7 @@ class ReservationMapper extends Singleton
             if ($reservation = $this->identityMap->get($result->id)) {
                 $reservations[] = [$reservation, $result->position];
             } else {
-                $reservation = new Reservation(intval($result->user_id), $result->room_name, new Carbon($result->timeslot), $result->description, $result->recur_id, intval($result->id));
+                $reservation = new Reservation(intval($result->user_id), $result->room_name, new Carbon($result->timeslot), $result->description, $result->recur_id, $result->waitlisted, $result->equipment_id, intval($result->id));
                 $this->identityMap->add($reservation);
                 $reservations[] = [$reservation, intval($result->position)];
             }
@@ -196,6 +213,19 @@ class ReservationMapper extends Singleton
         $reservation = $this->find($id);
 
         $reservation->setDescription($description);
+
+        // we've modified something in the object so we register the instance as dirty in the UoW
+        ReservationUoW::getInstance()->registerDirty($reservation);
+    }
+
+    /**
+     * @param int $id
+     * @param $waitlisted
+     */
+    public function setWaitlisted(int $id, $waitlisted) {
+        $reservation = $this->find($id);
+
+        $reservation->setWaitlisted($waitlisted);
 
         // we've modified something in the object so we register the instance as dirty in the UoW
         ReservationUoW::getInstance()->registerDirty($reservation);
