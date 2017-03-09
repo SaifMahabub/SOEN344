@@ -122,7 +122,7 @@ class ReservationTDG extends Singleton
     }
 
     /**
- * Returns a list of all Reservations for a given room-timeslot, ordered by id and by waitlisted = false
+ * Returns a list of all Reservations for a given room-timeslot, ordered by waitlisted = false, then by isCapstone for waiting list
  *
  * @param string $roomName
  * @param \DateTime $timeslot
@@ -183,7 +183,7 @@ class ReservationTDG extends Singleton
         //TODO: and prioritizing capstone users in the future.
 
         return DB::select('SELECT t.* FROM (
-                SELECT r.*,
+                SELECT x.*,
                     @rank_count := CASE 
                       WHEN waitlisted = 1 AND (@prev_room_name <> room_name OR @prev_timeslot <> timeslot) THEN 1
                       WHEN @prev_room_name <> room_name OR @prev_timeslot <> timeslot THEN 0
@@ -192,9 +192,12 @@ class ReservationTDG extends Singleton
                     @prev_room_name := room_name AS _prev_room_name
                 FROM 
                     (SELECT @prev_room_name := -1, @prev_timeslot := -1, @rank_count := -1) v,
-                    reservations r
-                ORDER BY room_name, timeslot, waitlisted, id) t
-            WHERE user_id = ? AND timeslot >= CURDATE()
+                    (SELECT r.*, u.isCapstone
+                    from reservations r
+                    LEFT JOIN users u
+                    on r.user_id = u.id) x
+                ORDER BY room_name, timeslot, waitlisted, isCapstone DESC, id) t
+                WHERE user_id = ? AND timeslot >= CURDATE()
             ORDER BY timeslot;', [$user_id]);
     }
 
