@@ -24,7 +24,7 @@
                 <label for="inputEquipment" class="col-xs-3 col-sm-2 col-form-label">Equipment</label>
                 <div class="col-xs-9 col-md-3">
                 <select class="form-control" name="equipment" id="inputEquipment">
-                    <option value="null">None</option>
+                    <option value="-1">None</option>
                     @foreach($equipment as $e)
                         <option value="{{$e->getId()}}">{{$e->getName()}}</option>
                     @endforeach

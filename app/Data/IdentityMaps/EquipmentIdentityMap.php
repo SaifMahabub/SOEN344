@@ -13,7 +13,7 @@ class EquipmentIdentityMap extends Singleton
     private $memory = [];
 
     /**
-     * @param string $name
+     * @param int $id
      * @return Equipment|null
      */
     public function get(int $id)

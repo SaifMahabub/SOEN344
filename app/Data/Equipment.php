@@ -21,7 +21,9 @@ class Equipment
 
     /**
      * Room constructor.
+     * @param int $id
      * @param string $name
+     * @param int $amount
      */
     public function __construct(int $id, string $name, int $amount)
     {
