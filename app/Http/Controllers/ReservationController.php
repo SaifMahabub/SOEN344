@@ -169,6 +169,7 @@ class ReservationController extends Controller
         ]);
 
         $equipmentId = $request->input('equipment', null);
+        $equipmentId = $equipmentId < 0 ? null : $equipmentId;
 
         $timeslot = Carbon::createFromFormat('Y-m-d\TH', $timeslot);
 
@@ -366,8 +367,9 @@ class ReservationController extends Controller
      * @param $timeslot
      * @return bool
      */
-    public function checkEquipmentAvailable(int $id, $timeslot)
+    public function checkEquipmentAvailable($id, $timeslot)
     {
+        if ($id < 0) return true;
         $amount = EquipmentMapper::getInstance()->find($id)->getAmount();
 
         $reservationMapper = ReservationMapper::getInstance();
