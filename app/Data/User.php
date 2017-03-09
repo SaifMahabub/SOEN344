@@ -22,18 +22,24 @@ class User extends Authenticatable
     protected $password;
 
     /**
+     * @var bool
+     */
+    protected $isCapstone;
+
+    /**
      * User constructor.
      * @param int $id
      * @param string $name
      * @param string $password
      */
-    public function __construct(int $id, string $name, string $password)
+    public function __construct(int $id, string $name, string $password, bool $isCapstone)
     {
         parent::__construct();
 
         $this->id = $id;
         $this->name = $name;
         $this->password = $password;
+        $this->isCapstone = $isCapstone;
     }
 
     /**
@@ -70,5 +76,15 @@ class User extends Authenticatable
     public function getPassword(): string
     {
         return $this->password;
+    }
+
+    public function getIsCapstone(): bool
+    {
+        return $this->isCapstone;
+    }
+
+    public function setIsCapstone(bool $isCapstone)
+    {
+        $this->isCapstone = $isCapstone;
     }
 }

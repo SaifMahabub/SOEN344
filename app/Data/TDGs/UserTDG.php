@@ -62,10 +62,11 @@ class UserTDG extends Singleton
      */
     public function create(User $user)
     {
-        DB::insert('INSERT INTO users (id, name, password) VALUES (:id, :name, :password)', [
+        DB::insert('INSERT INTO users (id, name, password, isCapstone) VALUES (:id, :name, :password, :isCapstone)', [
             'id' => $user->getId(),
             'name' => $user->getName(),
-            'password' => $user->getPassword()
+            'password' => $user->getPassword(),
+            'isCapstone' => $user->getIsCapstone()
         ]);
     }
 
