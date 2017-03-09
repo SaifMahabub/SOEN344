@@ -35,9 +35,9 @@ class EquipmentMapper extends Singleton
     }
 
     /**
-     * Fetch message for retrieving a User with the given ID
+     * Fetch message for retrieving an Equipment with the given ID
      *
-     * @param string $name
+     * @param int $id
      * @return Equipment
      */
     public function find(int $id): Equipment
