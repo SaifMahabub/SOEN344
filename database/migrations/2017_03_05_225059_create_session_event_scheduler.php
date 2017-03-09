@@ -17,7 +17,7 @@ class CreateSessionEventScheduler extends Migration
     {
         DB::unprepared('
             CREATE EVENT event_expired_session_removal
-            ON SCHEDULE EVERY 50 SECOND
+            ON SCHEDULE EVERY 15 SECOND
             DO
                 DELETE FROM session WHERE timestamp < NOW() - INTERVAL 1 MINUTE;
         ');

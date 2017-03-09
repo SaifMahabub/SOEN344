@@ -28,19 +28,3 @@
             document.getElementById("timer").style.color = "#ff0000";
         }
     }, 1000);
-
-    jQuery.ajax({
-        type: "POST",
-        url: '/resources/views/reservation/sessionTimoutRequest.php',
-        dataType: 'json',
-        data: {functionname: 'endSessionRequest', arguments: []},
-
-        success: function (obj, textstatus) {
-            if( !('error' in obj) ) {
-                console.log("Success");
-            }
-            else {
-                console.log(obj.error);
-            }
-        }
-    });
