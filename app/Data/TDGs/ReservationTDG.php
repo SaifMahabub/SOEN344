@@ -130,12 +130,12 @@ class ReservationTDG extends Singleton
  */
     public function findForTimeslot(string $roomName, \DateTime $timeslot)
     {
-        return DB::select('SELECT *
-            FROM reservations
-            WHERE timeslot = :timeslot AND room_name = :room_name
-            ORDER BY CASE
-            WHEN waitlisted = 0 THEN 1
-            ELSE id END', ['timeslot' => $timeslot, 'room_name' => $roomName]);
+        return DB::select('SELECT r.*, u.isCapstone
+            FROM reservations r
+            LEFT JOIN users u
+            ON r.user_id = u.id
+            WHERE r.timeslot = :timeslot AND r.room_name = :room_name
+            ORDER BY r.waitlisted, u.isCapstone DESC', ['timeslot' => $timeslot, 'room_name' => $roomName]);
     }
 
     /**
@@ -180,7 +180,6 @@ class ReservationTDG extends Singleton
      */
     public function findPositionsForUser(int $user_id)
     {
-        //TODO: waitlist should be sorted by waitlisted == true
         //TODO: and prioritizing capstone users in the future.
 
         return DB::select('SELECT t.* FROM (
