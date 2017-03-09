@@ -9,6 +9,7 @@ use App\Data\TDGs\ReservationSessionTDG;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use App\Data\Mappers\EquipmentMapper;
 
 class ReservationController extends Controller
 {
@@ -116,7 +117,7 @@ class ReservationController extends Controller
     public function showRequestForm(Request $request, $roomName, $timeslot)
     {
         $timeslot = Carbon::createFromFormat('Y-m-d\TH', $timeslot);
-
+        debugbar()->info('warning');
         // don't allow reserving in the past
         if ($timeslot->copy()->isPast()) {
             return redirect()->route('calendar', ['date' => $timeslot->toDateString()])
@@ -130,7 +131,7 @@ class ReservationController extends Controller
         if ($room === null) {
             return abort(404);
         }
-
+      
         $session = new ReservationSession(Auth::id(), $roomName, $timeslot);
         $sessionTDG = ReservationSessionTDG::getInstance();
 
@@ -151,7 +152,9 @@ class ReservationController extends Controller
 
         $sessionTDG->makeNewSession($session);
 
+        $equipmentMapper = EquipmentMapper::getInstance();
         $reservationMapper = ReservationMapper::getInstance();
+        $equipment = $equipmentMapper->findAll();
 
         if ($this->reachedWeeklyLimit($reservationMapper, $timeslot)) {
                 return redirect()->route('calendar', ['date' => $timeslot->toDateString()])
@@ -168,7 +171,8 @@ class ReservationController extends Controller
 
         return view('reservation.request', [
             'room' => $room,
-            'timeslot' => $timeslot
+            'timeslot' => $timeslot,
+            'equipment' => $equipment
         ]);
     }
 
@@ -184,6 +188,9 @@ class ReservationController extends Controller
             'description' => 'required',
             'recur' => 'required|integer|min:1|max:'.static::MAX_RECUR
         ]);
+
+        $equipmentId = $request->input('equipment', null);
+        $equipmentId = $equipmentId < 0 ? null : $equipmentId;
 
         $timeslot = Carbon::createFromFormat('Y-m-d\TH', $timeslot);
 
@@ -238,17 +245,25 @@ class ReservationController extends Controller
             }
 
             // check if waiting list for timeslot is full
-            $waitingList = $reservationMapper->findForTimeslot($roomName, $t);
-            if (count($waitingList) >= static::MAX_PER_TIMESLOT) {
+            $fullList = $reservationMapper->findForTimeslot($roomName, $t);
+            if (count($fullList) >= static::MAX_PER_TIMESLOT) {
                 $errored[] = [$t->copy(), 'The waiting list is full.'];
                 continue;
+            }
+
+            $isWaitlisted = false;
+            //if someone already has it reserved, you'll be added to the waiting list.
+            if (count($fullList) != 0 && !$fullList[0]->getWaitlisted()) {
+                $isWaitlisted = true;
+            } else if ($equipmentId != null){
+                //if equipment not available for that time slot, on the waiting list you go.
+                if (!$this->checkEquipmentAvailable($equipmentId, $t)) $isWaitlisted = true;
             }
 
             /*
              * Insert
              */
-
-            $reservations[] = $reservationMapper->create(intval(Auth::id()), $room->getName(), $t->copy(), $request->input('description', ''), $uuid);
+            $reservations[] = $reservationMapper->create(intval(Auth::id()), $room->getName(), $t->copy(), $request->input('description', ''), $uuid, $isWaitlisted, $equipmentId);
         }
 
         // run the reservation operations now, as we need to process the results
@@ -322,12 +337,35 @@ class ReservationController extends Controller
      */
     public function cancelReservation(Request $request, $id)
     {
-        // valiadte reservation exists and is owned by user
+        //TODO: if reservation is cancelled and was using an equipment, and next in line doesn't need that equipment or there is no next in line, check if others are also waiting on that equipment in other rooms for that timeslot and their room is free. First one on the list who can get in, gets in.
+
+        // validate reservation exists and is owned by user
         $reservationMapper = ReservationMapper::getInstance();
         $reservation = $reservationMapper->find($id);
 
         if ($reservation === null || $reservation->getUserId() !== Auth::id()) {
             return abort(404);
+        }
+
+        //if reservation was active then need to replace it with next in waiting list
+        if (!$reservation->getWaitlisted()) {
+            $reservations = $reservationMapper->findForTimeslot($reservation->getRoomName(), $reservation->getTimeslot());
+            $resSize = count($reservations);
+            //make them active only if the equipment they need is available!
+            //make the next person on the list not waitlisted anymore only if the equipment they need is also available.
+            $equipId = null;
+            //start at 1 because first value is the current active one to be cancelled.
+            for ($i=1; $i < $resSize; $i++) {
+                $equipId = $reservations[$i]->getEquipmentId();
+                //if equipId not available, move to the next
+                if ($equipId != null && !$this->checkEquipmentAvailable($equipId, $reservations[$i]->getTimeslot())) {
+                    continue;
+                } else {
+                    //else make them the active reservation
+                    $reservationMapper->setWaitlisted($reservations[$i]->getId(), false);
+                    break;
+                }
+            }
         }
 
         // delete the reservation
@@ -345,6 +383,26 @@ class ReservationController extends Controller
         }
 
         return $response->with('success', 'Successfully cancelled reservation!');
+    }
+
+    /**
+     * Checks whether or not a piece of equipment is available for a given timeslot.
+     *
+     * @param int $id the equipment id
+     * @param $timeslot
+     * @return bool
+     */
+    public function checkEquipmentAvailable($id, $timeslot)
+    {
+        if ($id < 0) return true;
+        $amount = EquipmentMapper::getInstance()->find($id)->getAmount();
+
+        $reservationMapper = ReservationMapper::getInstance();
+        $totalUsing = $reservationMapper->findForTimeWithEquipment($id, $timeslot);
+
+        //if none available return false
+        if ($totalUsing >= $amount) return false;
+        else return true;
     }
 
     /**

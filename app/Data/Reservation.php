@@ -35,24 +35,37 @@ class Reservation
     protected $recurId;
 
     /**
+     * @var boolean
+     */
+    protected $waitlisted;
+
+    /**
+     * @var int|null
+     */
+    protected $equipmentId;
+
+    /**
      * Room constructor.
      * @param int $userId
      * @param string $roomName
      * @param \DateTime $timeslot
      * @param string $description
      * @param null $recurId
+     * @param bool $waitlisted
+     * @param int $equipmentId
      * @param int $id
      */
-    public function __construct(int $userId, string $roomName, \DateTime $timeslot, string $description = null, $recurId = null, $id = null)
+    public function __construct(int $userId, string $roomName, \DateTime $timeslot, string $description = null, $recurId = null, bool $waitlisted = true, $equipmentId = null, $id = null)
     {
         $this->userId = $userId;
         $this->roomName = $roomName;
         $this->description = $description;
         $this->timeslot = $timeslot;
         $this->recurId = $recurId;
-
         // key
         $this->id = $id;
+        $this->waitlisted = $waitlisted;
+        $this->equipmentId = $equipmentId;
     }
 
     /**
@@ -149,5 +162,37 @@ class Reservation
     public function setRecurId(string $recurId)
     {
         $this->recurId = $recurId;
+    }
+
+    /**
+     * @return bool
+     */
+    public function getWaitlisted()
+    {
+        return $this->waitlisted;
+    }
+
+    /**
+     * @param bool $w
+     */
+    public function setWaitlisted($w)
+    {
+        $this->waitlisted = $w;
+    }
+
+    /**
+     * @return int|null
+     */
+    public function getEquipmentId()
+    {
+        return $this->equipmentId;
+    }
+
+    /**
+     * @param $id
+     */
+    public function setEquipmentId($id)
+    {
+        $this->equipmentId = $id;
     }
 }
