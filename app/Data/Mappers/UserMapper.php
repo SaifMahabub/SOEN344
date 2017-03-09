@@ -45,9 +45,9 @@ class UserMapper extends Singleton
      * @param string $password
      * @return User
      */
-    public function create(int $id, string $name, string $password): User
+    public function create(int $id, string $name, string $password, bool $isCapstone): User
     {
-        $user = new User($id, $name, $password);
+        $user = new User($id, $name, $password, $isCapstone);
 
         //Add the new Client to the list of existing objects in Live memory
         $this->identityMap->add($user);
@@ -77,7 +77,7 @@ class UserMapper extends Singleton
         // If TDG doesn't have it then it doens't exist.
         if ($result !== null) {
             //We got the client from the TDG who got it from the DB and now the mapper must add it to the ClientIdentityMap
-            $user = new User((int)$result[0], (string)$result[1], (string)$result[2], (double)$result[3]);
+            $user = new User((int)$result[0], (string)$result[1], (string)$result[2], (double)$result[3], (bool)$result[4]);
             $this->identityMap->add($user);
         }
 

@@ -11,7 +11,7 @@ use App\Data\Mappers\EquipmentMapper;
 
 class ReservationController extends Controller
 {
-    const MAX_PER_TIMESLOT = 4;
+    const MAX_PER_TIMESLOT = 5;
     const MAX_PER_USER_PER_WEEK = 3;
     const MAX_RECUR = 3;
 
@@ -116,7 +116,7 @@ class ReservationController extends Controller
     public function showRequestForm(Request $request, $roomName, $timeslot)
     {
         $timeslot = Carbon::createFromFormat('Y-m-d\TH', $timeslot);
-        debugbar()->info('warning');
+
         // don't allow reserving in the past
         if ($timeslot->copy()->isPast()) {
             return redirect()->route('calendar', ['date' => $timeslot->toDateString()])

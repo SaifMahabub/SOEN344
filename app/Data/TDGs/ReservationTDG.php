@@ -122,7 +122,7 @@ class ReservationTDG extends Singleton
     }
 
     /**
- * Returns a list of all Reservations for a given room-timeslot, ordered by id and by waitlisted = false
+ * Returns a list of all Reservations for a given room-timeslot, ordered by waitlisted = false, then by isCapstone for waiting list
  *
  * @param string $roomName
  * @param \DateTime $timeslot
@@ -130,12 +130,12 @@ class ReservationTDG extends Singleton
  */
     public function findForTimeslot(string $roomName, \DateTime $timeslot)
     {
-        return DB::select('SELECT *
-            FROM reservations
-            WHERE timeslot = :timeslot AND room_name = :room_name
-            ORDER BY CASE
-            WHEN waitlisted = 0 THEN 1
-            ELSE id END', ['timeslot' => $timeslot, 'room_name' => $roomName]);
+        return DB::select('SELECT r.*, u.isCapstone
+            FROM reservations r
+            LEFT JOIN users u
+            ON r.user_id = u.id
+            WHERE r.timeslot = :timeslot AND r.room_name = :room_name
+            ORDER BY r.waitlisted, u.isCapstone DESC', ['timeslot' => $timeslot, 'room_name' => $roomName]);
     }
 
     /**
@@ -180,11 +180,10 @@ class ReservationTDG extends Singleton
      */
     public function findPositionsForUser(int $user_id)
     {
-        //TODO: waitlist should be sorted by waitlisted == true
         //TODO: and prioritizing capstone users in the future.
 
         return DB::select('SELECT t.* FROM (
-                SELECT r.*,
+                SELECT x.*,
                     @rank_count := CASE 
                       WHEN waitlisted = 1 AND (@prev_room_name <> room_name OR @prev_timeslot <> timeslot) THEN 1
                       WHEN @prev_room_name <> room_name OR @prev_timeslot <> timeslot THEN 0
@@ -193,9 +192,12 @@ class ReservationTDG extends Singleton
                     @prev_room_name := room_name AS _prev_room_name
                 FROM 
                     (SELECT @prev_room_name := -1, @prev_timeslot := -1, @rank_count := -1) v,
-                    reservations r
-                ORDER BY room_name, timeslot, waitlisted, id) t
-            WHERE user_id = ? AND timeslot >= CURDATE()
+                    (SELECT r.*, u.isCapstone
+                    from reservations r
+                    LEFT JOIN users u
+                    on r.user_id = u.id) x
+                ORDER BY room_name, timeslot, waitlisted, isCapstone DESC, id) t
+                WHERE user_id = ? AND timeslot >= CURDATE()
             ORDER BY timeslot;', [$user_id]);
     }
 
