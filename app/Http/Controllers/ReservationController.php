@@ -311,6 +311,8 @@ class ReservationController extends Controller
      */
     public function cancelReservation(Request $request, $id)
     {
+        //TODO: if reservation is cancelled and was using an equipment, and next in line doesn't need that equipment or there is no next in line, check if others are also waiting on that equipment in other rooms for that timeslot and their room is free. First one on the list who can get in, gets in.
+
         // validate reservation exists and is owned by user
         $reservationMapper = ReservationMapper::getInstance();
         $reservation = $reservationMapper->find($id);

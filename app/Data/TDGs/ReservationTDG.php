@@ -185,13 +185,16 @@ class ReservationTDG extends Singleton
 
         return DB::select('SELECT t.* FROM (
                 SELECT r.*,
-                    @rank_count := CASE WHEN @prev_room_name <> room_name OR @prev_timeslot <> timeslot THEN 0 ELSE @rank_count + 1 END AS position,
+                    @rank_count := CASE 
+                      WHEN waitlisted = 1 AND (@prev_room_name <> room_name OR @prev_timeslot <> timeslot) THEN 1
+                      WHEN @prev_room_name <> room_name OR @prev_timeslot <> timeslot THEN 0
+                      ELSE @rank_count + 1 END AS position,
                     @prev_timeslot := timeslot AS _prev_timeslot,
                     @prev_room_name := room_name AS _prev_room_name
                 FROM 
                     (SELECT @prev_room_name := -1, @prev_timeslot := -1, @rank_count := -1) v,
                     reservations r
-                ORDER BY room_name, timeslot, id) t
+                ORDER BY room_name, timeslot, waitlisted, id) t
             WHERE user_id = ? AND timeslot >= CURDATE()
             ORDER BY timeslot;', [$user_id]);
     }
