@@ -5,6 +5,7 @@ namespace App\Data\TDGs;
 use App\Data\Room;
 use App\Singleton;
 use DB;
+use Illuminate\Database\QueryException;
 
 /**
  * @method static RoomTDG getInstance()

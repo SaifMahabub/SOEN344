@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Data\Mappers\ReservationMapper;
 use App\Data\Mappers\RoomMapper;
+use App\Data\ReservationSession;
+use App\Data\TDGs\ReservationSessionTDG;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -14,7 +16,6 @@ class ReservationController extends Controller
     const MAX_PER_TIMESLOT = 5;
     const MAX_PER_USER_PER_WEEK = 3;
     const MAX_RECUR = 3;
-
     /**
      * Create a new controller instance.
      */
@@ -130,6 +131,26 @@ class ReservationController extends Controller
         if ($room === null) {
             return abort(404);
         }
+      
+        $session = new ReservationSession(Auth::id(), $roomName, $timeslot);
+        $sessionTDG = ReservationSessionTDG::getInstance();
+
+        // Concurrency handling: lock the resource if another student is reserving.
+        if($sessionTDG->checkLock($session)){
+            return redirect()->route('calendar', ['date' => $timeslot->toDateString()])
+                ->with('error', sprintf("Another student has a session underway. Please wait patiently
+                or request for another room."));
+        }
+
+        // Concurrency handling: lock the other resources if the user is trying to access multiple
+        // resources at the same time.
+        if($sessionTDG->checkSessionInProgress($session)){
+            return redirect()->route('calendar', ['date' => $timeslot->toDateString()])
+                ->with('error', sprintf("You already have a session underway. Please complete
+                it before you process to a new reservation."));
+        }
+
+        $sessionTDG->makeNewSession($session);
 
         $equipmentMapper = EquipmentMapper::getInstance();
         $reservationMapper = ReservationMapper::getInstance();
@@ -301,6 +322,10 @@ class ReservationController extends Controller
                 return sprintf("<li><strong>%s</strong>: %s</li>", $m[0]->format('l, F jS, Y'), $m[1]);
             }, $errored))));
         }
+
+        $session = new ReservationSession(Auth::id(), $roomName, $timeslot);
+        $sessionTDG = ReservationSessionTDG::getInstance();
+        $sessionTDG->endSession($session);
 
         return $response;
     }

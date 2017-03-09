@@ -9,3 +9,4 @@ Homestead.yaml
 /public/docs
 sami.phar
 /.sami
+_ide_helper.php
