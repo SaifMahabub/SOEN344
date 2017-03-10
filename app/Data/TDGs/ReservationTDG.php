@@ -145,12 +145,28 @@ class ReservationTDG extends Singleton
      * @param \DateTime $timeslot
      * @return array
      */
-    public function findForTimeWithEquipment(int $equipId, \DateTime $timeslot)
+    public function findActiveForTimeWithEquipment(int $equipId, \DateTime $timeslot)
     {
         return DB::select('SELECT *
             FROM reservations
             WHERE timeslot = :timeslot AND equipment_id = :equipment_id AND waitlisted = 0',
             ['timeslot' => $timeslot, 'equipment_id' => $equipId]
+        );
+    }
+
+    /** Returns a list of reservations that are pending equipment availability,
+     * but are ready to become active because no active reservations exists for their time/room */
+    public function findReadyToBeActiveForTimeWithEquipment(\DateTime $timeslot, int $equipmentId)
+    {
+        return DB::select('SELECT *
+            FROM reservations
+            WHERE timeslot = :timeslot AND equipment_id = :equipment_id AND waitlisted = 1
+            AND room_name NOT IN
+            (SELECT room_name
+            FROM reservations
+            WHERE waitlisted = 0
+            GROUP BY room_name)',
+            ['timeslot' => $timeslot, 'equipment_id' => $equipmentId]
         );
     }
 
@@ -180,8 +196,6 @@ class ReservationTDG extends Singleton
      */
     public function findPositionsForUser(int $user_id)
     {
-        //TODO: and prioritizing capstone users in the future.
-
         return DB::select('SELECT t.* FROM (
                 SELECT x.*,
                     @rank_count := CASE 
