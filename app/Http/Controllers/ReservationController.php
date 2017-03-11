@@ -219,6 +219,7 @@ class ReservationController extends Controller
         $successful = [];
         $waitlisted = [];
         $errored = [];
+        $pendingEquipment = [];
 
         $response = redirect()
             ->route('calendar', ['date' => $timeslot->toDateString()]);
@@ -257,7 +258,11 @@ class ReservationController extends Controller
                 $isWaitlisted = true;
             } else if ($equipmentId != null){
                 //if equipment not available for that time slot, on the waiting list you go.
-                if (!$this->checkEquipmentAvailable($equipmentId, $t)) $isWaitlisted = true;
+                if (!$this->checkEquipmentAvailable($equipmentId, $t)){
+                    $isWaitlisted = true;
+                    $equipName = EquipmentMapper::getInstance()->find($equipmentId)->getName();
+                    $pendingEquipment[] = [$t->copy(), $equipName];
+                }
             }
 
             /*
@@ -309,6 +314,14 @@ class ReservationController extends Controller
             $response = $response->with('success', sprintf('The following reservations have been successfully created for %s at %s:<ul class="mb-0">%s</ul>', $room->getName(), $timeslot->format('g a'), implode("\n", array_map(function ($m) {
                 return sprintf("<li><strong>%s</strong></li>", $m->format('l, F jS, Y'));
             }, $successful))));
+        }
+
+        if (count($pendingEquipment)) {
+            $response = $response->with('pendingEquipWarning', sprintf('The equipment that you requested is not available at this time: %s at %s:<ul class="mb-0">%s</ul>', $room->getName(), $timeslot->format('g a')
+                , implode("\n", array_map(function ($m) {
+                return sprintf("<li><strong>%s</strong>: %s</li>", $m[0]->format('l, F jS, Y'), $m[1]);
+            }, $pendingEquipment))
+            ));
         }
 
         if (count($waitlisted)) {
