@@ -116,11 +116,36 @@ class ReservationMapper extends Singleton
      * @param \DateTime $timeslot
      * @return int Number of active reservations for that timeslot who are using the equipment
      */
-    public function findForTimeWithEquipment(int $equipmentId, \DateTime $timeslot): int
+    public function findActiveForTimeWithEquipment(int $equipmentId, \DateTime $timeslot): int
     {
-        $results = $this->tdg->findForTimeWithEquipment($equipmentId, $timeslot);
+        $results = $this->tdg->findActiveForTimeWithEquipment($equipmentId, $timeslot);
 
         return count($results);
+    }
+
+    /**
+     * @param \DateTime $timeslot
+     * @param int $equipmentId
+     * @return array List of waitlisted reservations for given time and equipment request that are ready to be active
+     * (no active reservations for their room/time).
+     *
+     */
+    public function findReadyToBeActiveForTimeWithEquipment(\DateTime $timeslot, int $equipmentId)
+    {
+        $results = $this->tdg->findReadyToBeActiveForTimeWithEquipment($timeslot, $equipmentId);
+        $reservations = [];
+
+        foreach ($results as $result) {
+            if ($reservation = $this->identityMap->get($result->id)) {
+                $reservations[] = $reservation;
+            } else {
+                $reservation = new Reservation(intval($result->user_id), $result->room_name, new Carbon($result->timeslot), $result->description, $result->recur_id, $result->waitlisted, $result->equipment_id, intval($result->id));
+                $this->identityMap->add($reservation);
+                $reservations[] = $reservation;
+            }
+        }
+
+        return $reservations;
     }
 
     /**

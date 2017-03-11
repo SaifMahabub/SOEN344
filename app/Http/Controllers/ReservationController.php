@@ -219,6 +219,7 @@ class ReservationController extends Controller
         $successful = [];
         $waitlisted = [];
         $errored = [];
+        $pendingEquipment = [];
 
         $response = redirect()
             ->route('calendar', ['date' => $timeslot->toDateString()]);
@@ -257,7 +258,11 @@ class ReservationController extends Controller
                 $isWaitlisted = true;
             } else if ($equipmentId != null){
                 //if equipment not available for that time slot, on the waiting list you go.
-                if (!$this->checkEquipmentAvailable($equipmentId, $t)) $isWaitlisted = true;
+                if (!$this->checkEquipmentAvailable($equipmentId, $t)){
+                    $isWaitlisted = true;
+                    $equipName = EquipmentMapper::getInstance()->find($equipmentId)->getName();
+                    $pendingEquipment[] = [$t->copy(), $equipName];
+                }
             }
 
             /*
@@ -311,6 +316,14 @@ class ReservationController extends Controller
             }, $successful))));
         }
 
+        if (count($pendingEquipment)) {
+            $response = $response->with('pendingEquipWarning', sprintf('The equipment that you requested is not available at this time: %s at %s:<ul class="mb-0">%s</ul>', $room->getName(), $timeslot->format('g a')
+                , implode("\n", array_map(function ($m) {
+                return sprintf("<li><strong>%s</strong>: %s</li>", $m[0]->format('l, F jS, Y'), $m[1]);
+            }, $pendingEquipment))
+            ));
+        }
+
         if (count($waitlisted)) {
             $response = $response->with('warning', sprintf('You have been put on a waiting list for the following reservations for %s at %s:<ul class="mb-0">%s</ul>', $room->getName(), $timeslot->format('g a'), implode("\n", array_map(function ($m) {
                 return sprintf("<li><strong>%s</strong>: Position #%d</li>", $m[0]->format('l, F jS, Y'), $m[1]);
@@ -337,8 +350,6 @@ class ReservationController extends Controller
      */
     public function cancelReservation(Request $request, $id)
     {
-        //TODO: if reservation is cancelled and was using an equipment, and next in line doesn't need that equipment or there is no next in line, check if others are also waiting on that equipment in other rooms for that timeslot and their room is free. First one on the list who can get in, gets in.
-
         // validate reservation exists and is owned by user
         $reservationMapper = ReservationMapper::getInstance();
         $reservation = $reservationMapper->find($id);
@@ -346,6 +357,9 @@ class ReservationController extends Controller
         if ($reservation === null || $reservation->getUserId() !== Auth::id()) {
             return abort(404);
         }
+
+        $cancelledEquip = $reservation->getEquipmentId();
+        $resTimeslot = $reservation->getTimeslot();
 
         //if reservation was active then need to replace it with next in waiting list
         if (!$reservation->getWaitlisted()) {
@@ -358,12 +372,23 @@ class ReservationController extends Controller
             for ($i=1; $i < $resSize; $i++) {
                 $equipId = $reservations[$i]->getEquipmentId();
                 //if equipId not available, move to the next
-                if ($equipId != null && !$this->checkEquipmentAvailable($equipId, $reservations[$i]->getTimeslot())) {
+                if ($equipId != null && $equipId != $cancelledEquip && !$this->checkEquipmentAvailable($equipId, $reservations[$i]->getTimeslot())) {
                     continue;
                 } else {
                     //else make them the active reservation
                     $reservationMapper->setWaitlisted($reservations[$i]->getId(), false);
                     break;
+                }
+            }
+
+            //now check if an equipment is being freed up, and if someone in another room can be promoted to active due to this availability.
+            //if not null and wasn't replaced by the same equipment, then need to check if others are ready to promote.
+            if ($cancelledEquip != null && $cancelledEquip != $equipId) {
+                //get all ready to promote reservations for this timeslot, equipmentId = $cancelledEquip.
+                $readyToBeActive = $reservationMapper->findReadyToBeActiveForTimeWithEquipment($resTimeslot, $cancelledEquip);
+                //Promote first on list.
+                if (count($readyToBeActive) > 0) {
+                    $reservationMapper->setWaitlisted($readyToBeActive[0]->getId(), false);
                 }
             }
         }
@@ -398,7 +423,7 @@ class ReservationController extends Controller
         $amount = EquipmentMapper::getInstance()->find($id)->getAmount();
 
         $reservationMapper = ReservationMapper::getInstance();
-        $totalUsing = $reservationMapper->findForTimeWithEquipment($id, $timeslot);
+        $totalUsing = $reservationMapper->findActiveForTimeWithEquipment($id, $timeslot);
 
         //if none available return false
         if ($totalUsing >= $amount) return false;
