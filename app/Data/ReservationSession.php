@@ -27,7 +27,7 @@ class ReservationSession
      * @param string $roomName
      * @param \DateTime $timeslot
      */
-    public function __construct($userId, string $roomName, \DateTime $timeslot)
+    public function __construct($userId, $roomName, $timeslot)
     {
         $this->userId = $userId;
         $this->roomName = $roomName;
