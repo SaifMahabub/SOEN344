@@ -498,4 +498,20 @@ class ReservationController extends Controller
 
         return $recur + $recurrence <= static::MAX_RECUR ? true : false;
     }
+
+    /**
+     * @param Request $request
+     * @param string $id
+     * @return \Illuminate\Http\Response
+     */
+    public function cancelReservationSession(Request $request)
+    {
+        $session = new ReservationSession(Auth::id(), null, null);
+        $sessionTDG = ReservationSessionTDG::getInstance();
+        $sessionTDG->endSession($session);
+
+        $response = redirect();
+        $response = $response->route('calendar', ['date' => date('Y-m-d')]);
+        return $response;
+    }
 }

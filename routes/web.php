@@ -57,3 +57,6 @@ Route::post('/reservation/modify/{id}', 'ReservationController@modifyReservation
 
 Route::get('/reservation/cancel/{id}', 'ReservationController@cancelReservation')
     ->name('reservationCancel');
+
+Route::get('/cancelSession', 'ReservationController@cancelReservationSession')
+    -> name ('reservationSessionCancel');
