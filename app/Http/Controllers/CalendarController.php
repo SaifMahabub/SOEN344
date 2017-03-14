@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Data\Mappers\ReservationMapper;
-use App\Data\Mappers\RoomMapper;
+use App\Data\RoomCatalog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
@@ -41,8 +41,8 @@ class CalendarController extends Controller
         }
 
         // fetch all rooms to display
-        $roomMapper = RoomMapper::getInstance();
-        $rooms = $roomMapper->findAll();
+        $roomCatalog = RoomCatalog::getInstance();
+        $rooms = $roomCatalog->findAll();
 
         $reservationMapper = ReservationMapper::getInstance();
 

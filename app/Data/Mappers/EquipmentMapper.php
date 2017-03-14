@@ -24,7 +24,7 @@ class EquipmentMapper extends Singleton
     private $identityMap;
 
     /**
-     * UserMapper constructor.
+     * EquipmentMapper constructor.
      */
     protected function __construct()
     {

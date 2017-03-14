@@ -25,7 +25,7 @@ class RoomMapper extends Singleton
     private $identityMap;
 
     /**
-     * UserMapper constructor.
+     * RoomMapper constructor.
      */
     protected function __construct()
     {

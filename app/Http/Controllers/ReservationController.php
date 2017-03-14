@@ -3,13 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Data\Mappers\ReservationMapper;
-use App\Data\Mappers\RoomMapper;
+use App\Data\RoomCatalog;
 use App\Data\ReservationSession;
 use App\Data\TDGs\ReservationSessionTDG;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use App\Data\Mappers\EquipmentMapper;
+use App\Data\EquipmentCatalog;
 
 class ReservationController extends Controller
 {
@@ -125,8 +125,8 @@ class ReservationController extends Controller
         }
 
         // validate room exists
-        $roomMapper = RoomMapper::getInstance();
-        $room = $roomMapper->find($roomName);
+        $roomCatalog = RoomCatalog::getInstance();
+        $room = $roomCatalog->find($roomName);
 
         if ($room === null) {
             return abort(404);
@@ -152,9 +152,9 @@ class ReservationController extends Controller
 
         $sessionTDG->makeNewSession($session);
 
-        $equipmentMapper = EquipmentMapper::getInstance();
+        $equipmentCatalog = EquipmentCatalog::getInstance();
         $reservationMapper = ReservationMapper::getInstance();
-        $equipment = $equipmentMapper->findAll();
+        $equipment = $equipmentCatalog->findAll();
 
         if ($this->reachedWeeklyLimit($reservationMapper, $timeslot)) {
                 return redirect()->route('calendar', ['date' => $timeslot->toDateString()])
@@ -201,8 +201,8 @@ class ReservationController extends Controller
         }
 
         // validate room exists
-        $roomMapper = RoomMapper::getInstance();
-        $room = $roomMapper->find($roomName);
+        $roomCatalog = roomCatalog::getInstance();
+        $room = $roomCatalog->find($roomName);
 
         if ($room === null) {
             return abort(404);
@@ -260,7 +260,7 @@ class ReservationController extends Controller
                 //if equipment not available for that time slot, on the waiting list you go.
                 if (!$this->checkEquipmentAvailable($equipmentId, $t)){
                     $isWaitlisted = true;
-                    $equipName = EquipmentMapper::getInstance()->find($equipmentId)->getName();
+                    $equipName = EquipmentCatalog::getInstance()->find($equipmentId)->getName();
                     $pendingEquipment[] = [$t->copy(), $equipName];
                 }
             }
@@ -420,7 +420,7 @@ class ReservationController extends Controller
     public function checkEquipmentAvailable($id, $timeslot)
     {
         if ($id < 0) return true;
-        $amount = EquipmentMapper::getInstance()->find($id)->getAmount();
+        $amount = EquipmentCatalog::getInstance()->find($id)->getAmount();
 
         $reservationMapper = ReservationMapper::getInstance();
         $totalUsing = $reservationMapper->findActiveForTimeWithEquipment($id, $timeslot);
