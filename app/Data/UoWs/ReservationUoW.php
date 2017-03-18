@@ -11,46 +11,51 @@ use App\Singleton;
  */
 class ReservationUoW extends Singleton
 {
-    private $newList = [];
-    private $changedList = [];
-    private $deletedList = [];
+    private $newList = array();
+    private $changedList = array();
+    private $deletedList = array();
 
     /**
      * @var ReservationMapper
      */
-    private $mapper;
+    private $reservationMapper;
 
     protected function __construct()
     {
         parent::__construct();
 
-        $this->mapper = ReservationMapper::getInstance();
+        $this->reservationMapper = ReservationMapper::getInstance();
     }
 
     public function registerNew(Reservation $reservation)
     {
-        $this->newList[] = $reservation;
+        array_push($this->newList, $reservation);
     }
 
     public function registerDirty(Reservation $reservation)
     {
-        $this->changedList[] = $reservation;
+        array_push($this->changedList, $reservation);
     }
 
     public function registerDeleted(Reservation $reservation)
     {
-        $this->deletedList[] = $reservation;
+        array_push($this->deletedList, $reservation);
     }
 
     public function commit()
     {
-        $this->mapper->addMany($this->newList);
-        $this->mapper->updateMany($this->changedList);
-        $this->mapper->deleteMany($this->deletedList);
+        $this->reservationMapper->addMany($this->newList);
+        $this->reservationMapper->updateMany($this->changedList);
+        $this->reservationMapper->deleteMany($this->deletedList);
 
         // empty the lists after the commit
-        $this->newList = [];
-        $this->changedList = [];
-        $this->deletedList = [];
+        unset($this->newList);
+        $this->newList = array();
+
+        unset($this->changedList);
+        $this->changedList = array();
+
+        unset($this->deletedList);
+        $this->deletedList = array();
     }
 }
