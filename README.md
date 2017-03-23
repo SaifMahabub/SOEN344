@@ -1,7 +1,20 @@
 # Chronos
 
-SOEN 343 - Fall 2016
+SOEN 344 - Fall 2016
 
+Version 2.0 
+Name | Student ID
+--- | ---
+An Ran Chen | 27277385 
+Adriel Fabella | 27466005
+Alexander Rosser | 27543069 
+Amr Mourad | 26795331
+Chris Bianchet | 27039573
+Philippe Kuret | 27392680
+Saif Mahabub | 27392974
+
+
+Version 1.0
 Name | Student ID
 --- | ---
 Angelo Pengue | 26674151
