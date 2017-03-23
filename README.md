@@ -1,8 +1,7 @@
 # Chronos
 
-SOEN 344 - Fall 2016
+SOEN 344 - Fall 2016 
 
-Version 2.0 
 Name | Student ID
 --- | ---
 An Ran Chen | 27277385 
@@ -14,7 +13,6 @@ Philippe Kuret | 27392680
 Saif Mahabub | 27392974
 
 
-Version 1.0
 Name | Student ID
 --- | ---
 Angelo Pengue | 26674151
