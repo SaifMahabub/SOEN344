@@ -2,6 +2,8 @@
 
 SOEN 344 - Fall 2016 
 
+Version 2.0
+
 Name | Student ID
 --- | ---
 An Ran Chen | 27277385 
@@ -12,6 +14,7 @@ Chris Bianchet | 27039573
 Philippe Kuret | 27392680
 Saif Mahabub | 27392974
 
+Version 1.0
 
 Name | Student ID
 --- | ---
