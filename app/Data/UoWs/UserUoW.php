@@ -13,46 +13,52 @@ use App\Singleton;
  */
 class UserUoW extends Singleton
 {
-    private $newList = [];
-    private $changedList = [];
-    private $deletedList = [];
+    private $newList = array();
+    private $changedList = array();
+    private $deletedList = array();
 
     /**
      * @var UserMapper
      */
-    private $mapper;
+    private $userMapper;
 
     protected function __construct()
     {
         parent::__construct();
 
-        $this->mapper = UserMapper::getInstance();
+        $this->userMapper = UserMapper::getInstance();
     }
 
     public function registerNew(User $user)
     {
-        $this->newList[] = $user;
+        array_push($this->newList, $user);
     }
 
     public function registerDirty(User $user)
     {
-        $this->changedList[] = $user;
+        array_push($this->changedList, $user);
     }
 
     public function registerDeleted(User $user)
     {
-        $this->deletedList[] = $user;
+        array_push($this->deletedList, $user);
     }
 
     public function commit()
     {
-        $this->mapper->addMany($this->newList);
-        $this->mapper->updateMany($this->changedList);
-        $this->mapper->deleteMany($this->deletedList);
+        $this->userMapper->addMany($this->newList);
+        $this->userMapper->updateMany($this->changedList);
+        $this->userMapper->deleteMany($this->deletedList);
 
         // empty the lists after the commit
-        $this->newList = [];
-        $this->changedList = [];
-        $this->deletedList = [];
+        unset($this->newList);
+        $this->newList = array();
+
+        unset($this->changedList);
+        $this->changedList = array();
+
+        unset($this->deletedList);
+        $this->deletedList = array();
+
     }
 }
