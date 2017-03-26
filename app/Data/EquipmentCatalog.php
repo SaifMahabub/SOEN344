@@ -22,7 +22,7 @@ class EquipmentCatalog
 
 	public function find(int $id): Equipment
     {
-        $equipment = $this->equipmentMapper->find($id)
+        $equipment = $this->equipmentMapper->find($id);
         
        return $equipment;
     }

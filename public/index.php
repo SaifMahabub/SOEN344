@@ -35,6 +35,18 @@ require __DIR__.'/../bootstrap/autoload.php';
 
 $app = require_once __DIR__.'/../bootstrap/app.php';
 
+$applicationAspectKernel = App\ApplicationAspectKernel::getInstance();
+$applicationAspectKernel->init(array(
+    'debug' => true, // use 'false' for production mode
+    // Cache directory
+    //cacheDir'  => __DIR__ . '/bootstrap/cache',
+    'cacheDir' => __DIR__ . '/aop_cache',
+    // Include paths restricts the directories where aspects should be applied, or empty for all source files
+    //'includePaths' => array()
+    'appDir' => __DIR__."/../app/",
+    'includePaths' => [__DIR__.'/../app/']
+));
+
 /*
 |--------------------------------------------------------------------------
 | Run The Application

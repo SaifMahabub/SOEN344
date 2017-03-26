@@ -22,7 +22,7 @@ class RoomCatalog
 
 	public function find(string $name): Room
     {
-        $room = $this->roomMapper->find($name)
+        $room = $this->roomMapper->find($name);
         
        return $room;
     }

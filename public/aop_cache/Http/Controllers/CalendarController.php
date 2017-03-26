@@ -8,7 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
 
-class CalendarController extends Controller
+class CalendarController__AopProxied extends Controller
 {
     /**
      * Create a new controller instance.
@@ -60,3 +60,7 @@ class CalendarController extends Controller
         ]);
     }
 }
+
+include_once AOP_CACHE_DIR . '/_proxies/Http/Controllers/CalendarController.php';
+
+
