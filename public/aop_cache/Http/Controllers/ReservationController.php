@@ -95,9 +95,9 @@ class ReservationController__AopProxied extends Controller
         $reservationMapper = ReservationMapper::getInstance();
         $reservation = $reservationMapper->find($id);
 
-        if ($reservation === null || $reservation->getUserId() !== Auth::id()) {
-            return abort(404);
-        }
+//        if ($reservation === null || $reservation->getUserId() !== Auth::id()) {
+//            return abort(404);
+//        }
 
         // update the description
         $reservationMapper->set($reservation->getId(), $request->input('description', ""));
