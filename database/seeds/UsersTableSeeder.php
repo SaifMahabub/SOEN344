@@ -19,5 +19,14 @@ class UsersTableSeeder extends Seeder
                 'isCapstone' => 0
             ]);
         }
+
+        for ($i = 0, $userId = 10000010; $i < 5; ++$i) {
+            DB::table('users')->insert([
+                'id' => $userId + $i,
+                'name' => 'Capstone User ' . $i,
+                'password' => bcrypt('password'),
+                'isCapstone' => 1
+            ]);
+        }
     }
 }

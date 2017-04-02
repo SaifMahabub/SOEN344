@@ -11,7 +11,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Data\Mappers\EquipmentMapper;
 
-class ReservationController extends Controller
+class ReservationController__AopProxied extends Controller
 {
     const MAX_PER_TIMESLOT = 5;
     const MAX_PER_USER_PER_WEEK = 3;
@@ -483,3 +483,7 @@ class ReservationController extends Controller
         return $response;
     }
 }
+
+include_once AOP_CACHE_DIR . '/_proxies/Http/Controllers/ReservationController.php';
+
+
