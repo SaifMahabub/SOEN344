@@ -6,6 +6,7 @@ use App\Aspect\MonitorAspect;
 use App\Aspect\EquipmentAspect;
 use App\Aspect\LoggingAspect;
 use App\Aspect\CalendarAspect;
+use App\Aspect\ReservationAspect;
 use Go\Core\AspectKernel;
 use Go\Core\AspectContainer;
 
@@ -29,5 +30,6 @@ class ApplicationAspectKernel extends AspectKernel
         $container->registerAspect(new LoggingAspect());
         $container->registerAspect(new EquipmentAspect());
         $container->registerAspect(new CalendarAspect());
+        $container->registerAspect(new ReservationAspect());
     }
 }

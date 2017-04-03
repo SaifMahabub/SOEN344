@@ -313,10 +313,16 @@ class ReservationController extends ReservationController__AopProxied implements
     'modifyReservation' => 
     array (
       0 => 'advisor.App\\Aspect\\LoggingAspect->beforeReservationMethod',
+      1 => 'advisor.App\\Aspect\\ReservationAspect->beforeMethodExecution',
     ),
     'showRequestForm' => 
     array (
       0 => 'advisor.App\\Aspect\\LoggingAspect->beforeReservationMethod',
+      1 => 'advisor.App\\Aspect\\ReservationAspect->beforeMethodExecutionSelfSession',
+      2 => 'advisor.App\\Aspect\\ReservationAspect->beforeMethodExecutionCheckLock',
+      3 => 'advisor.App\\Aspect\\ReservationAspect->beforeMethodExecutionWeeklyLimit',
+      4 => 'advisor.App\\Aspect\\ReservationAspect->beforeMethodExecutionWaitlistFull',
+      5 => 'advisor.App\\Aspect\\ReservationAspect->beforeMethodExecutionIsPast',
     ),
     'requestReservation' => 
     array (

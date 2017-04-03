@@ -95,10 +95,6 @@ class ReservationController__AopProxied extends Controller
         $reservationMapper = ReservationMapper::getInstance();
         $reservation = $reservationMapper->find($id);
 
-//        if ($reservation === null || $reservation->getUserId() !== Auth::id()) {
-//            return abort(404);
-//        }
-
         // update the description
         $reservationMapper->set($reservation->getId(), $request->input('description', ""));
         $reservationMapper->done();
@@ -118,12 +114,6 @@ class ReservationController__AopProxied extends Controller
     {
         $timeslot = Carbon::createFromFormat('Y-m-d\TH', $timeslot);
 
-        // don't allow reserving in the past
-        if ($timeslot->copy()->isPast()) {
-            return redirect()->route('calendar', ['date' => $timeslot->toDateString()])
-                ->with('error', 'You cannot reserve time slots in the past.');
-        }
-
         // validate room exists
         $roomMapper = RoomMapper::getInstance();
         $room = $roomMapper->find($roomName);
@@ -135,38 +125,8 @@ class ReservationController__AopProxied extends Controller
         $session = new ReservationSession(Auth::id(), $roomName, $timeslot);
         $sessionTDG = ReservationSessionTDG::getInstance();
 
-
-        // Concurrency handling: lock the other resources if the user is trying to access multiple
-        // resources at the same time.
-        if($sessionTDG->checkSessionInProgress($session)){
-            return redirect()->route('calendar', ['date' => $timeslot->toDateString()])
-                ->with('error', sprintf("You already have a session underway. Please complete
-                it before you process to a new reservation."));
-        }
-
-        // Concurrency handling: lock the resource if another student is reserving.
-        if($sessionTDG->checkLock($session)){
-            return redirect()->route('calendar', ['date' => $timeslot->toDateString()])
-                ->with('error', sprintf("Another student has a session underway. Please wait patiently
-                or request for another room."));
-        }
-
         $equipmentMapper = EquipmentMapper::getInstance();
-        $reservationMapper = ReservationMapper::getInstance();
         $equipment = $equipmentMapper->findAll();
-
-        if ($this->reachedWeeklyLimit($reservationMapper, $timeslot)) {
-                return redirect()->route('calendar', ['date' => $timeslot->toDateString()])
-                    ->with('error', sprintf("You've exceeded your reservation request limit (%d) for this week.", static::MAX_PER_USER_PER_WEEK));
-        }
-
-        // check if waiting list for timeslot is full
-        $reservations = $reservationMapper->findForTimeslot($roomName, $timeslot);
-
-        if (count($reservations) >= static::MAX_PER_TIMESLOT) {
-            return redirect()->route('calendar', ['date' => $timeslot->toDateString()])
-                ->with('error', 'The waiting list for that time slot is full.');
-        }
 
         // if all the requirements have been satisfied, create a new session
         $sessionTDG->makeNewSession($session);

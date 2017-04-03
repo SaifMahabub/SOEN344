@@ -47,9 +47,10 @@ class ReservationSessionTDG extends Singleton
     }
 
     public function checkLock (ReservationSession $session){
-        $lock = DB::select('SELECT * FROM session WHERE roomName = :roomName AND timeslot = :timeslot', [
+        $lock = DB::select('SELECT * FROM session WHERE roomName = :roomName AND timeslot = :timeslot AND userId != :userId', [
             'roomName' => $session->getRoomName(),
-            'timeslot' => $session->getTimeslot()
+            'timeslot' => $session->getTimeslot(),
+            'userId' => $session->getUserId()
         ]);
 
         if (empty($lock)) {
