@@ -1,6 +1,6 @@
 # Chronos
 
-SOEN 344 - Fall 2016 
+SOEN 344 - Fall 2017 
 
 Version 2.0
 
@@ -25,6 +25,9 @@ Jhayzle Arevalo | 27344333
 Richard Puth | 27407726
 Rikil Desai | 27534841
 Steve Ferreira | 27477546
+
+## Submission
+All documentations can be found under doc_submission branch. It contains: SAD, SRS, Chang Log and Technical report on AOP Migration.
 
 ## Installing
 
