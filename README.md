@@ -189,6 +189,12 @@ Most of the Chronos installation is done via Composer, PHP’s package manager. 
   Application cache cleared!
   Application is now live.
   ```
+[Optional] An error `Class 'Barryvdh\LaravelIdeHelper\IdeHelperServiceProvider' not found` may occur on Laravel framework, run the following commands to solve it:
+  ```
+composer require barryvdh/laravel-debugbar
+php artisan vendor:publish --provider="Barryvdh\Debugbar\ServiceProvider"
+composer require barryvdh/laravel-ide-helper
+  ```
 
 2. Generate an application encryption key (only once):
 
