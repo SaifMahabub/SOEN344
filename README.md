@@ -1,6 +1,6 @@
 # Chronos
 
-SOEN 344 - Fall 2017 
+SOEN 344 - Winter 2017 
 
 Version 2.0
 
